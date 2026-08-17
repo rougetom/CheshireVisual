@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 interface Waypoint {
   id: string;
@@ -170,7 +169,6 @@ export function initDroneOverlay() {
   // Try loading the real model; keep the procedural drone as a live fallback
   // until (and unless) the GLTF resolves.
   const loader = new GLTFLoader();
-  loader.setMeshoptDecoder(MeshoptDecoder);
   loader.load(
     '/models/drone.glb',
     (gltf) => {
@@ -198,8 +196,9 @@ export function initDroneOverlay() {
       }
     },
     undefined,
-    () => {
+    (err) => {
       // GLB failed to load (missing/invalid) — procedural drone stays in place.
+      console.warn('drone.glb failed to load, using procedural fallback', err);
     }
   );
 
