@@ -1,0 +1,122 @@
+---
+import SectionBackdrop from './SectionBackdrop.astro';
+
+const services = [
+  {
+    index: '(01)',
+    title: 'Aerial film & photography',
+    body: 'Cinematic drone cinematography and stills in up to 8K — sweeping reveals, orbits and top-downs, graded to match your brand. Ideal for property marketing, construction progress and event coverage.',
+  },
+  {
+    index: '(02)',
+    title: '360° & virtual tours',
+    body: 'Immersive 360° capture and interactive walkthroughs for property, education and venues — every corner, on demand, embeddable directly on your website.',
+  },
+  {
+    index: '(03)',
+    title: 'Ground filming & post-production',
+    body: 'Full production on the ground and in the edit — motion graphics, colour grading and sound design, delivered ready to publish across web, social and print.',
+  },
+];
+---
+
+<section id="services" class="services">
+  <SectionBackdrop
+    gradient="radial-gradient(120% 90% at 20% 78%, #202028, #121216 52%, #0a0a0c 84%)"
+    animation="kb"
+    scrim="linear-gradient(0deg, rgba(10,10,11,.92), rgba(10,10,11,.72) 60%, rgba(10,10,11,.9))"
+    videoId="servicesVideo"
+  />
+
+  <div class="inner">
+    <p class="kicker" data-reveal>02 / Services</p>
+    <h2 class="visually-hidden">Drone, aerial and 360° video services</h2>
+
+    <div class="grid">
+      {
+        services.map((service) => (
+          <div class="col" data-reveal>
+            <div class="index">{service.index}</div>
+            <h3>{service.title}</h3>
+            <p>{service.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .services {
+    position: relative;
+    overflow: hidden;
+    padding: 120px var(--section-x);
+  }
+
+  .inner {
+    position: relative;
+    z-index: 10;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 56px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--color-border-12);
+  }
+
+  .col {
+    padding: 44px 40px 44px 0;
+    border-right: 1px solid var(--color-border-12);
+  }
+
+  .col:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .col:not(:first-child) {
+    padding-left: 40px;
+  }
+
+  .index {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--color-text-40);
+    margin-bottom: 26px;
+  }
+
+  h3 {
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .col p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--color-text-68);
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: 1fr;
+      border-top: none;
+    }
+
+    .col {
+      border-right: none;
+      border-top: 1px solid var(--color-border-12);
+      padding: 32px 0 !important;
+    }
+  }
+</style>

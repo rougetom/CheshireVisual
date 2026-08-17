@@ -1,0 +1,202 @@
+---
+import SectionBackdrop from './SectionBackdrop.astro';
+---
+
+<section id="hero" class="hero-scene">
+  <div class="hero-stage">
+    <div id="heroMedia" class="hero-media">
+      <SectionBackdrop
+        gradient="radial-gradient(120% 80% at 30% 18%, #262630, #14141a 48%, #0a0a0c 80%)"
+        animation="kb"
+        videoId="heroVideo"
+      />
+      <p class="footage-note">Showreel footage — drop an .mp4 into <code>/public/videos/hero.mp4</code></p>
+    </div>
+
+    <div id="heroContent" class="hero-content">
+      <p class="kicker">Aerial · 360° · Film</p>
+      <h1>see it from<br />every angle<span class="accent">.</span></h1>
+      <div class="hero-row">
+        <p class="lede">
+          CAA-licensed drone, aerial and 360&deg; video production for property, construction, education
+          and events across Cheshire and the North West of England.
+        </p>
+        <div class="scroll-cue" aria-hidden="true">
+          <span>Scroll</span>
+          <span class="arrow">↓</span>
+        </div>
+      </div>
+      <p class="credibility">
+        Property · Construction · Events · Education&nbsp;&nbsp;
+        <span class="dot">◆</span>&nbsp;&nbsp;CAA licensed · Fully insured · 4K &amp; 8K 360&deg;
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-scene {
+    position: relative;
+    height: 240vh;
+    background: var(--color-bg);
+  }
+
+  .hero-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .hero-media {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--color-bg-media);
+    will-change: transform, inset, border-radius;
+  }
+
+  .footage-note {
+    position: absolute;
+    right: 26px;
+    top: 26px;
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0;
+    max-width: 40%;
+    text-align: right;
+  }
+
+  .hero-content {
+    position: absolute;
+    left: var(--section-x);
+    right: var(--section-x);
+    bottom: var(--section-x);
+    z-index: 20;
+    will-change: transform, opacity;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-text-60);
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-weight: 700;
+    color: #fff;
+    font-size: clamp(44px, 9vw, 128px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+
+  .accent {
+    color: var(--color-accent);
+  }
+
+  .hero-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 40px;
+    margin-top: 36px;
+    flex-wrap: wrap;
+  }
+
+  .lede {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text-72);
+    max-width: 460px;
+  }
+
+  .scroll-cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-60);
+    font-size: 10.5px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  .scroll-cue .arrow {
+    animation: cue 1.8s ease-in-out infinite;
+    font-size: 15px;
+  }
+
+  .credibility {
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid var(--color-border-09);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-50);
+  }
+
+  .dot {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 640px) {
+    .footage-note {
+      display: none;
+    }
+
+    .credibility {
+      line-height: 2;
+    }
+  }
+</style>
+
+<script>
+  const scene = document.getElementById('hero');
+  const media = document.getElementById('heroMedia');
+  const content = document.getElementById('heroContent');
+  const video = document.getElementById('heroVideo') as HTMLVideoElement | null;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (scene && media && content && !reduceMotion) {
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const rect = scene.getBoundingClientRect();
+      const total = scene.offsetHeight - window.innerHeight;
+      const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
+      const ease = p * p * (3 - 2 * p);
+      const inset = ease * 46;
+
+      media.style.left = `${inset}px`;
+      media.style.right = `${inset}px`;
+      media.style.top = `${inset}px`;
+      media.style.bottom = `${inset}px`;
+      media.style.borderRadius = `${ease * 22}px`;
+
+      content.style.transform = `translateY(${-p * 90}px)`;
+      content.style.opacity = String(Math.max(0, 1 - p * 1.25));
+
+      if (video && video.readyState >= 1 && video.duration) {
+        video.currentTime = p * video.duration;
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+</script>

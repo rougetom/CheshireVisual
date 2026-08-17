@@ -1,0 +1,98 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  path?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description,
+  path = '/',
+  image = '/og-image.png',
+} = Astro.props;
+
+const canonicalURL = new URL(path, Astro.site);
+const imageURL = new URL(image, Astro.site);
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': ['LocalBusiness', 'ProfessionalService'],
+  name: 'Cheshire Visual',
+  description:
+    'CAA-licensed drone, aerial and 360° photography and video production for property, construction, education, sport and events across Cheshire and the North West of England.',
+  url: 'https://cheshirevisual.co.uk',
+  image: imageURL.toString(),
+  email: 'hello@cheshirevisual.co.uk',
+  telephone: '+441000000000',
+  priceRange: '££',
+  areaServed: [
+    { '@type': 'AdministrativeArea', name: 'Cheshire' },
+    { '@type': 'AdministrativeArea', name: 'North West England' },
+    { '@type': 'City', name: 'Chester' },
+    { '@type': 'City', name: 'Manchester' },
+    { '@type': 'City', name: 'Liverpool' },
+    { '@type': 'City', name: 'Warrington' },
+  ],
+  address: {
+    '@type': 'PostalAddress',
+    addressRegion: 'Cheshire',
+    addressCountry: 'GB',
+  },
+  makesOffer: [
+    {
+      '@type': 'Offer',
+      itemOffered: {
+        '@type': 'Service',
+        name: 'Aerial drone filming and photography',
+      },
+    },
+    {
+      '@type': 'Offer',
+      itemOffered: {
+        '@type': 'Service',
+        name: '360° virtual tours',
+      },
+    },
+    {
+      '@type': 'Offer',
+      itemOffered: {
+        '@type': 'Service',
+        name: 'Ground filming and post-production',
+      },
+    },
+  ],
+};
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalURL} />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0c0c0d" />
+<meta name="robots" content="index, follow" />
+<meta name="author" content="Cheshire Visual" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Cheshire Visual" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:image" content={imageURL} />
+<meta property="og:locale" content="en_GB" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageURL} />
+
+<!-- Icons / manifest -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- Structured data -->
+<script type="application/ld+json" is:inline set:html={JSON.stringify(localBusinessSchema)} />

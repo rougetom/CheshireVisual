@@ -1,0 +1,93 @@
+---
+import SectionBackdrop from './SectionBackdrop.astro';
+
+// Placeholder sector wordmarks — swap for real client logos once available.
+// Deliberately generic (not fabricated company names) until you can supply
+// approved logos/case studies.
+const sectors = [
+  'Independent Schools',
+  'Housebuilders',
+  'Construction Groups',
+  'Sports Clubs',
+  'Further Education',
+  'Event Venues',
+];
+---
+
+<section id="clients" class="clients">
+  <SectionBackdrop
+    gradient="radial-gradient(120% 100% at 50% 100%, #1f1f26, #101014 55%, #0a0a0c 85%)"
+    animation="kb2"
+    scrim="linear-gradient(0deg, rgba(10,10,11,.85), rgba(10,10,11,.75) 60%, rgba(10,10,11,.92))"
+    videoId="clientsVideo"
+  />
+
+  <div class="inner">
+    <div class="head" data-reveal>
+      <p class="kicker">04 / Clients</p>
+      <h2>Trusted across<br />the North West.</h2>
+      <p class="lede">
+        From independent schools and colleges to housebuilders, construction groups and event venues
+        &mdash; teams across Cheshire and the North West bring us in when the footage has a job to do.
+      </p>
+    </div>
+
+    <ul class="sector-strip" data-reveal>
+      {sectors.map((sector) => <li>{sector}</li>)}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .clients {
+    position: relative;
+    overflow: hidden;
+    padding: 120px var(--section-x);
+  }
+
+  .inner {
+    position: relative;
+    z-index: 10;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin-bottom: 22px;
+  }
+
+  .lede {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--color-text-70);
+    max-width: 640px;
+  }
+
+  .sector-strip {
+    list-style: none;
+    margin: 64px 0 0;
+    padding: 30px 0 0;
+    border-top: 1px solid var(--color-border-12);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 48px;
+  }
+
+  .sector-strip li {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-50);
+    white-space: nowrap;
+  }
+</style>

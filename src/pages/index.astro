@@ -1,0 +1,36 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Header from '@/components/Header.astro';
+import Hero from '@/components/Hero.astro';
+import About from '@/components/About.astro';
+import Services from '@/components/Services.astro';
+import UseCases from '@/components/UseCases.astro';
+import Clients from '@/components/Clients.astro';
+import Contact from '@/components/Contact.astro';
+import Footer from '@/components/Footer.astro';
+import DroneOverlay from '@/components/DroneOverlay.astro';
+---
+
+<Layout
+  title="Cheshire Visual | Drone & Aerial Videography in Cheshire & the North West"
+  description="CAA-licensed drone, aerial and 360° video production based in Cheshire, serving property, construction, education and events across the North West of England."
+  path="/"
+>
+  <Header />
+  <DroneOverlay />
+
+  <main id="main">
+    <Hero />
+    <About />
+    <Services />
+    <UseCases />
+    <Clients />
+    <Contact />
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  import '@/scripts/reveal';
+</script>

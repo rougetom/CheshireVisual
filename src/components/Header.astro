@@ -1,0 +1,220 @@
+---
+const navLinks = [
+  { href: '#about', label: 'About' },
+  { href: '#services', label: 'Services' },
+  { href: '#use-cases', label: 'Use cases' },
+  { href: '#clients', label: 'Clients' },
+  { href: '#contact', label: 'Contact' },
+];
+---
+
+<header class="site-header">
+  <div class="bar">
+    <a class="wordmark" href="#hero">Cheshire Visual</a>
+
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+      <span class="visually-hidden">Toggle menu</span>
+      <span class="menu-toggle__bars" aria-hidden="true"></span>
+    </button>
+
+    <nav id="primary-nav" class="primary-nav" aria-label="Primary">
+      <ul>
+        {
+          navLinks.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="cta" href="#contact">Get a quote</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    padding: 18px var(--section-x);
+    background: rgba(12, 12, 13, 0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--color-border-09);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .wordmark {
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .primary-nav {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .primary-nav ul {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .primary-nav a {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-70);
+    transition: color 0.2s ease;
+  }
+
+  .primary-nav a:hover,
+  .primary-nav a:focus-visible {
+    color: var(--color-text);
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 1px solid var(--color-accent);
+    color: var(--color-text) !important;
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    border-radius: 999px;
+    white-space: nowrap;
+    transition:
+      background 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .cta:hover,
+  .cta:focus-visible {
+    background: var(--color-accent);
+    transform: translateY(-1px);
+  }
+
+  .menu-toggle {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border-25);
+    background: transparent;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .menu-toggle__bars,
+  .menu-toggle__bars::before,
+  .menu-toggle__bars::after {
+    content: '';
+    position: absolute;
+    left: 11px;
+    right: 11px;
+    height: 1px;
+    background: var(--color-text);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .menu-toggle__bars {
+    top: 19px;
+  }
+
+  .menu-toggle__bars::before {
+    top: -6px;
+  }
+
+  .menu-toggle__bars::after {
+    top: 6px;
+  }
+
+  .site-header[data-open='true'] .menu-toggle__bars {
+    background: transparent;
+  }
+
+  .site-header[data-open='true'] .menu-toggle__bars::before {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .site-header[data-open='true'] .menu-toggle__bars::after {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  @media (max-width: 900px) {
+    .menu-toggle {
+      display: block;
+    }
+
+    .primary-nav {
+      position: fixed;
+      inset: 0;
+      top: 0;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 36px;
+      padding: 0 var(--section-x-mobile);
+      background: #0c0c0dfa;
+      transform: translateY(-100%);
+      opacity: 0;
+      transition:
+        transform 0.35s var(--ease-reveal),
+        opacity 0.35s var(--ease-reveal);
+      pointer-events: none;
+    }
+
+    .site-header[data-open='true'] .primary-nav {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .primary-nav ul {
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .primary-nav a {
+      font-size: 20px;
+    }
+
+    .cta {
+      font-size: 13px;
+    }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('.site-header');
+  const toggle = header?.querySelector<HTMLButtonElement>('.menu-toggle');
+  const nav = header?.querySelector<HTMLElement>('.primary-nav');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = header?.getAttribute('data-open') === 'true';
+    header?.setAttribute('data-open', String(!isOpen));
+    toggle.setAttribute('aria-expanded', String(!isOpen));
+    document.body.style.overflow = isOpen ? '' : 'hidden';
+  });
+
+  nav?.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => {
+      header?.setAttribute('data-open', 'false');
+      toggle?.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    });
+  });
+</script>

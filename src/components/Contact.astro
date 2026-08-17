@@ -1,0 +1,103 @@
+---
+import SectionBackdrop from './SectionBackdrop.astro';
+---
+
+<section id="contact" class="contact">
+  <SectionBackdrop
+    gradient="radial-gradient(120% 100% at 50% 30%, #26262f, #131318 50%, #0a0a0c 82%)"
+    animation="kb2"
+    scrim="radial-gradient(120% 100% at 50% 40%, transparent 30%, rgba(0,0,0,.82))"
+    videoId="contactVideo"
+  />
+
+  <div class="inner">
+    <p class="kicker" data-reveal>05 / Start a project</p>
+
+    <div class="row">
+      <h2 data-reveal>Let's get<br />you in the air.</h2>
+
+      <div class="links" data-reveal>
+        <a href="mailto:hello@cheshirevisual.co.uk" class="link-row">
+          hello@cheshirevisual.co.uk <span class="arrow">→</span>
+        </a>
+        <a href="tel:+441000000000" class="link-row">
+          +44 (0)1000 000 000 <span class="arrow">→</span>
+        </a>
+        <p class="note">
+          Based in Cheshire. Flying across Chester, Manchester, Liverpool, Warrington and the wider
+          North West.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact {
+    position: relative;
+    overflow: hidden;
+    padding: 130px var(--section-x) 120px;
+  }
+
+  .inner {
+    position: relative;
+    z-index: 10;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 40px;
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 60px;
+    flex-wrap: wrap;
+  }
+
+  h2 {
+    font-weight: 700;
+    font-size: clamp(40px, 7vw, 104px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+  }
+
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-width: 300px;
+  }
+
+  .link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid var(--color-border-18);
+    padding-bottom: 16px;
+    font-size: 18px;
+    transition: border-color 0.2s ease;
+  }
+
+  .link-row:hover,
+  .link-row:focus-visible {
+    border-color: var(--color-accent);
+  }
+
+  .arrow {
+    color: var(--color-accent);
+  }
+
+  .note {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--color-text-50);
+    line-height: 1.7;
+  }
+</style>
