@@ -150,7 +150,7 @@ export function initDroneOverlay() {
   scene.add(rig);
 
   let mixer: THREE.AnimationMixer | null = null;
-  let rotorGroups: THREE.Group[] = [];
+  let rotorGroups: THREE.Object3D[] = [];
 
   const procedural = buildProceduralDrone();
   rig.add(procedural);
@@ -187,6 +187,16 @@ export function initDroneOverlay() {
       model.position.sub(center.multiplyScalar(targetSize / maxDim));
 
       rig.add(model);
+
+      // The source rig drives its propellers via named skeleton joints
+      // (prop_1_jnt..prop_4_jnt) rather than a simple parent group — spin
+      // those directly each frame instead of relying on the "hover" clip,
+      // which only animates the body.
+      const propJoints: THREE.Object3D[] = [];
+      model.traverse((child) => {
+        if (/^prop_\d+_jnt/.test(child.name)) propJoints.push(child);
+      });
+      if (propJoints.length) rotorGroups = propJoints;
 
       if (gltf.animations?.length) {
         mixer = new THREE.AnimationMixer(model);
@@ -288,10 +298,12 @@ export function initDroneOverlay() {
     rig.rotation.x = velY * 10;
 
     if (!reduceMotion) {
+      // Update the body/hover clip first, then spin the rotors — this way
+      // rotor spin always wins even if a clip also targets those joints.
+      if (mixer) mixer.update(dt);
       rotorGroups.forEach((r, i) => {
         r.rotation.y += dt * (26 + i * 1.5);
       });
-      if (mixer) mixer.update(dt);
     } else if (mixer) {
       mixer.update(0);
     }
