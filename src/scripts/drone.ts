@@ -16,7 +16,7 @@ interface Waypoint {
 // x/y are viewport fractions (0-1); tuned to clear each section's text blocks
 // (see README for the layout each targets empty space around).
 const WAYPOINTS: Waypoint[] = [
-  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 0.5, tilt: 0.08 },
+  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 1.57, tilt: 0.08 },
   { id: 'about', x: 0.86, y: 0.78, scale: 0.7, rotationY: -0.7, tilt: -0.05 },
   { id: 'services', x: 0.5, y: 0.1, scale: 0.75, rotationY: 0.9, tilt: 0.1 },
   { id: 'use-cases', x: 0.87, y: 0.22, scale: 0.62, rotationY: -0.4, tilt: -0.08 },
@@ -149,7 +149,6 @@ export function initDroneOverlay() {
   const rig = new THREE.Group();
   scene.add(rig);
 
-  let mixer: THREE.AnimationMixer | null = null;
   let rotorGroups: THREE.Object3D[] = [];
 
   const procedural = buildProceduralDrone();
@@ -198,12 +197,11 @@ export function initDroneOverlay() {
       });
       if (propJoints.length) rotorGroups = propJoints;
 
-      if (gltf.animations?.length) {
-        mixer = new THREE.AnimationMixer(model);
-        const hover = gltf.animations.find((a) => a.name === 'hover') ?? gltf.animations[0];
-        const action = mixer.clipAction(hover);
-        action.play();
-      }
+      // Deliberately not playing the source "hover" clip: it bakes in a
+      // large body-relative vertical excursion (presumably meant for a
+      // dedicated showreel shot), which fights our own flight-position
+      // waypoints and periodically carries the model out of frame. Rotor
+      // spin below is independent of it and unaffected.
     },
     undefined,
     (err) => {
@@ -259,6 +257,19 @@ export function initDroneOverlay() {
   computeTarget();
   Object.assign(current, target);
 
+  // Entrance: start below the viewport and nose-up, so the drone flies up
+  // into its hero position on first load instead of just appearing there.
+  // Runs as its own slow tween, decoupled from the (much snappier)
+  // scroll-follow damping below, so it actually reads as a fly-in.
+  const entranceDuration = reduceMotion ? 0 : 1.6;
+  let entranceElapsed = 0;
+  const entranceFrom = {
+    y: target.y + 0.9,
+    scale: target.scale * 0.85,
+    tilt: target.tilt + 0.18,
+  };
+  if (!reduceMotion) Object.assign(current, entranceFrom);
+
   const timer = new THREE.Timer();
   timer.connect(document);
   let idleT = 0;
@@ -270,10 +281,20 @@ export function initDroneOverlay() {
 
     const damp = reduceMotion ? 1 : 1 - Math.pow(0.001, dt);
     current.x += (target.x - current.x) * damp;
-    current.y += (target.y - current.y) * damp;
-    current.scale += (target.scale - current.scale) * damp;
     current.rotationY += (target.rotationY - current.rotationY) * damp;
-    current.tilt += (target.tilt - current.tilt) * damp;
+
+    if (entranceElapsed < entranceDuration) {
+      entranceElapsed += dt;
+      const p = Math.min(1, entranceElapsed / entranceDuration);
+      const e = p * p * (3 - 2 * p);
+      current.y = entranceFrom.y + (target.y - entranceFrom.y) * e;
+      current.scale = entranceFrom.scale + (target.scale - entranceFrom.scale) * e;
+      current.tilt = entranceFrom.tilt + (target.tilt - entranceFrom.tilt) * e;
+    } else {
+      current.y += (target.y - current.y) * damp;
+      current.scale += (target.scale - current.scale) * damp;
+      current.tilt += (target.tilt - current.tilt) * damp;
+    }
 
     const ndcX = current.x * 2 - 1;
     const ndcY = -(current.y * 2 - 1);
@@ -298,14 +319,9 @@ export function initDroneOverlay() {
     rig.rotation.x = velY * 10;
 
     if (!reduceMotion) {
-      // Update the body/hover clip first, then spin the rotors — this way
-      // rotor spin always wins even if a clip also targets those joints.
-      if (mixer) mixer.update(dt);
       rotorGroups.forEach((r, i) => {
         r.rotation.y += dt * (26 + i * 1.5);
       });
-    } else if (mixer) {
-      mixer.update(0);
     }
 
     renderer.render(scene, camera);
