@@ -31,7 +31,6 @@ src/
   scripts/       drone.ts (3D overlay), reveal.ts (scroll-reveal)
   styles/        tokens.css (design tokens), global.css
 public/
-  models/        drone.glb — the 3D drone model
   videos/        drop section background footage here (see below)
 ```
 
@@ -41,22 +40,25 @@ public/
 above each section's background footage and below its text (z-index 6; text sits at z-index 10,
 the header at 50).
 
-`src/scripts/drone.ts` loads `public/models/drone.glb` (optimised from a Sketchfab source model —
-1.2MB, meshopt + WebP compressed, with only the `hover` animation clip kept). As you scroll, the
-drone eases toward a waypoint associated with whichever section is centred in the viewport
-(`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). Rotors spin
-continuously; the `hover` clip drives the body animation if present.
+The drone itself is **hand-authored Three.js geometry** in `buildProceduralDrone()`
+(`src/scripts/drone.ts`) — primitives only (boxes, cylinders, a torus), no external model file.
+That was a deliberate choice, not a fallback: an earlier version loaded a `.glb`, but even a
+well-optimised one (1.2MB) pulled in loader/decoder complexity and a network fetch that turned out
+to be genuinely fragile under some CSPs (data-URI embeds routed through `fetch()`, which strict
+`connect-src` policies can block silently). Pure procedural geometry has zero asset weight, zero
+network dependency, and no third-party licensing question. Local +Z is "forward" (the direction
+the camera gimbal points), so a rig at `rotation.y = 0` faces the viewer.
 
-If `drone.glb` is ever missing or fails to load, a small procedural low-poly drone (built from
-primitive geometry) renders instead automatically — the site never breaks without the asset.
+As you scroll, the drone eases toward a waypoint associated with whichever section is centred in
+the viewport (`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). Rotors
+spin continuously via `group.userData.rotors`. On load it flies in from below the viewport over a
+1.6s entrance tween (separate from the snappier scroll-follow easing, which converges too fast on
+its own to read as motion).
 
-Respects `prefers-reduced-motion`: the drone stops easing/idling and rotor spin/mixer playback
-freezes.
+Respects `prefers-reduced-motion`: the entrance, idle bob and rotor spin all freeze.
 
-**To swap the model:** replace `public/models/drone.glb` with another optimised GLB. Keep it under
-~2MB for a background decorative element — run it through
-[`@gltf-transform/cli optimize`](https://gltf-transform.dev/cli) first (see git history of this
-file for the exact command used).
+**To restyle the drone:** edit `buildProceduralDrone()` directly — it's ~100 lines of primitive
+geometry with named sections (body, sensors, gimbal, legs, arms/motors/props).
 
 ## Video backgrounds
 

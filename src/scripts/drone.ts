@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 interface Waypoint {
   id: string;
@@ -16,7 +15,7 @@ interface Waypoint {
 // x/y are viewport fractions (0-1); tuned to clear each section's text blocks
 // (see README for the layout each targets empty space around).
 const WAYPOINTS: Waypoint[] = [
-  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 1.57, tilt: 0.08 },
+  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 0.18, tilt: 0.08 },
   { id: 'about', x: 0.86, y: 0.78, scale: 0.7, rotationY: -0.7, tilt: -0.05 },
   { id: 'services', x: 0.5, y: 0.1, scale: 0.75, rotationY: 0.9, tilt: 0.1 },
   { id: 'use-cases', x: 0.87, y: 0.22, scale: 0.62, rotationY: -0.4, tilt: -0.08 },
@@ -24,97 +23,141 @@ const WAYPOINTS: Waypoint[] = [
   { id: 'contact', x: 0.8, y: 0.1, scale: 0.9, rotationY: -0.3, tilt: -0.04 },
 ];
 
+// Hand-authored from primitives, styled after a compact folding-arm
+// consumer quadcopter (light plastic shell, front 3-axis gimbal camera,
+// paired obstacle-avoidance lenses, orange-tipped two-blade props — swapped
+// for the site's red accent). Local +Z is "forward" (the direction the
+// gimbal camera points); a rig at rotation.y = 0 therefore faces the
+// viewer, since the camera looks back down -Z toward the origin.
 function buildProceduralDrone(): THREE.Group {
   const group = new THREE.Group();
 
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1d,
-    roughness: 0.35,
+  const shellMat = new THREE.MeshStandardMaterial({
+    color: 0xdcdcdf,
+    roughness: 0.55,
+    metalness: 0.08,
+  });
+  const trimMat = new THREE.MeshStandardMaterial({
+    color: 0x2b2b2f,
+    roughness: 0.4,
+    metalness: 0.35,
+  });
+  const lensMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a0c,
+    roughness: 0.12,
     metalness: 0.6,
   });
   const accentMat = new THREE.MeshStandardMaterial({
     color: 0xdd3333,
     roughness: 0.3,
-    metalness: 0.2,
+    metalness: 0.15,
     emissive: 0xdd3333,
-    emissiveIntensity: 0.4,
-  });
-  const armMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2a2e,
-    roughness: 0.45,
-    metalness: 0.5,
+    emissiveIntensity: 0.35,
   });
   const bladeMat = new THREE.MeshStandardMaterial({
-    color: 0x0c0c0d,
-    roughness: 0.4,
-    metalness: 0.3,
+    color: 0xcfcfd2,
+    roughness: 0.35,
+    metalness: 0.1,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.82,
+    side: THREE.DoubleSide,
   });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.18, 4, 12), bodyMat);
-  body.rotation.x = Math.PI / 2;
+  // Body shell
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.075, 0.26), shellMat);
+  body.position.set(0, 0, -0.01);
   group.add(body);
 
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), accentMat);
-  beacon.position.set(0, -0.05, 0.16);
-  group.add(beacon);
+  // Top sensor bump + vent detail
+  const bump = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.035, 0.09), shellMat);
+  bump.position.set(0, 0.052, 0.06);
+  group.add(bump);
+  const vent = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.006, 0.05), trimMat);
+  vent.position.set(0.03, 0.071, -0.03);
+  vent.rotation.y = 0.5;
+  group.add(vent);
 
-  const armPositions: [number, number][] = [
-    [1, 1],
-    [1, -1],
-    [-1, 1],
-    [-1, -1],
-  ];
+  // Paired obstacle-avoidance sensors on the nose
+  [-1, 1].forEach((s) => {
+    const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), trimMat);
+    sensor.position.set(s * 0.085, 0.018, 0.125);
+    group.add(sensor);
+  });
 
+  // 3-axis gimbal housing + lens, slung below the nose
+  const gimbal = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.075), trimMat);
+  gimbal.position.set(0, -0.058, 0.115);
+  group.add(gimbal);
+  const lensBarrel = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.026, 0.026, 0.032, 16),
+    trimMat
+  );
+  lensBarrel.rotation.x = Math.PI / 2;
+  lensBarrel.position.set(0, -0.058, 0.15);
+  group.add(lensBarrel);
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.021, 16), lensMat);
+  lens.position.set(0, -0.058, 0.167);
+  group.add(lens);
+
+  // 2 rear landing legs
+  [-1, 1].forEach((s) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.1, 8), shellMat);
+    leg.position.set(s * 0.1, -0.075, -0.14);
+    leg.rotation.z = s * 0.12;
+    group.add(leg);
+  });
+
+  // 4 folding arms in an X configuration, motors + 2-blade props at each tip
+  const armLength = 0.34;
+  const armAngles = [45, 135, 225, 315].map((deg) => (deg * Math.PI) / 180);
   const rotorGroups: THREE.Group[] = [];
 
-  armPositions.forEach(([sx, sz]) => {
-    const armLength = 0.42;
-    const arm = new THREE.Mesh(
-      new THREE.BoxGeometry(armLength, 0.028, 0.028),
-      armMat
-    );
-    const angle = Math.atan2(sz, sx);
-    arm.position.set(
-      Math.cos(angle) * (armLength / 2),
-      0,
-      Math.sin(angle) * (armLength / 2)
-    );
+  armAngles.forEach((angle) => {
+    const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.017, armLength, 8), shellMat);
+    arm.position.copy(dir.clone().multiplyScalar(armLength / 2));
+    arm.position.y = 0.01;
+    arm.rotation.z = Math.PI / 2;
     arm.rotation.y = -angle;
     group.add(arm);
 
-    const motor = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.032, 0.036, 0.05, 12),
-      armMat
-    );
-    motor.position.set(Math.cos(angle) * armLength, 0.02, Math.sin(angle) * armLength);
+    const motorPos = dir.clone().multiplyScalar(armLength);
+    motorPos.y = 0.022;
+
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.027, 0.03, 12), trimMat);
+    motor.position.copy(motorPos);
     group.add(motor);
 
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.004, 8, 16), accentMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.copy(motorPos).setY(motorPos.y + 0.013);
+    group.add(ring);
+
     const rotorGroup = new THREE.Group();
-    rotorGroup.position.copy(motor.position);
-    rotorGroup.position.y += 0.03;
+    rotorGroup.position.copy(motorPos).setY(motorPos.y + 0.017);
 
     for (let i = 0; i < 2; i++) {
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.004, 0.028), bladeMat);
-      blade.rotation.y = (i * Math.PI) / 1;
+      const blade = new THREE.Group();
+      blade.rotation.y = i * Math.PI;
+
+      const main = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.003, 0.022), bladeMat);
+      main.position.x = 0.075;
+      blade.add(main);
+
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.0035, 0.022), accentMat);
+      tip.position.x = 0.1625;
+      blade.add(tip);
+
       rotorGroup.add(blade);
     }
 
     group.add(rotorGroup);
     rotorGroups.push(rotorGroup);
-
-    const led = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), accentMat);
-    led.position.set(Math.cos(angle) * armLength, 0.05, Math.sin(angle) * armLength);
-    group.add(led);
   });
 
-  const gimbal = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), armMat);
-  gimbal.position.set(0, -0.12, 0.05);
-  group.add(gimbal);
-
   group.userData.rotors = rotorGroups;
-  group.scale.setScalar(2.2);
+  group.scale.setScalar(1.3);
 
   return group;
 }
@@ -149,11 +192,9 @@ export function initDroneOverlay() {
   const rig = new THREE.Group();
   scene.add(rig);
 
-  let rotorGroups: THREE.Object3D[] = [];
-
-  const procedural = buildProceduralDrone();
-  rig.add(procedural);
-  rotorGroups = procedural.userData.rotors ?? [];
+  const drone = buildProceduralDrone();
+  rig.add(drone);
+  const rotorGroups: THREE.Object3D[] = drone.userData.rotors ?? [];
 
   function resize() {
     const w = window.innerWidth;
@@ -164,51 +205,6 @@ export function initDroneOverlay() {
   }
   resize();
   window.addEventListener('resize', resize);
-
-  // Try loading the real model; keep the procedural drone as a live fallback
-  // until (and unless) the GLTF resolves.
-  const loader = new GLTFLoader();
-  loader.load(
-    '/models/drone.glb',
-    (gltf) => {
-      rig.remove(procedural);
-      const model = gltf.scene;
-
-      const box = new THREE.Box3().setFromObject(model);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z) || 1;
-      const targetSize = 1.6;
-      model.scale.setScalar(targetSize / maxDim);
-
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      model.position.sub(center.multiplyScalar(targetSize / maxDim));
-
-      rig.add(model);
-
-      // The source rig drives its propellers via named skeleton joints
-      // (prop_1_jnt..prop_4_jnt) rather than a simple parent group — spin
-      // those directly each frame instead of relying on the "hover" clip,
-      // which only animates the body.
-      const propJoints: THREE.Object3D[] = [];
-      model.traverse((child) => {
-        if (/^prop_\d+_jnt/.test(child.name)) propJoints.push(child);
-      });
-      if (propJoints.length) rotorGroups = propJoints;
-
-      // Deliberately not playing the source "hover" clip: it bakes in a
-      // large body-relative vertical excursion (presumably meant for a
-      // dedicated showreel shot), which fights our own flight-position
-      // waypoints and periodically carries the model out of frame. Rotor
-      // spin below is independent of it and unaffected.
-    },
-    undefined,
-    (err) => {
-      // GLB failed to load (missing/invalid) — procedural drone stays in place.
-      console.warn('drone.glb failed to load, using procedural fallback', err);
-    }
-  );
 
   // Flight target state
   const current = { x: 0.7, y: 0.42, scale: 1.15, rotationY: 0.5, tilt: 0.08 };
