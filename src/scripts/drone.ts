@@ -54,14 +54,37 @@ function buildProceduralDrone(): THREE.Group {
     emissive: 0xdd3333,
     emissiveIntensity: 0.35,
   });
+  // Corrected from an earlier light-grey assumption after zooming into the
+  // reference photo's propeller crops: the blades are dark charcoal, not
+  // light grey, with a broad paddle silhouette (not a thin rectangular strip).
   const bladeMat = new THREE.MeshStandardMaterial({
-    color: 0xcfcfd2,
-    roughness: 0.35,
-    metalness: 0.1,
-    transparent: true,
-    opacity: 0.82,
+    color: 0x38383b,
+    roughness: 0.4,
+    metalness: 0.05,
     side: THREE.DoubleSide,
   });
+
+  function bladeShape(): THREE.Shape {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0.006);
+    s.quadraticCurveTo(0.02, 0.011, 0.06, 0.014);
+    s.quadraticCurveTo(0.1, 0.011, 0.15, 0.003);
+    s.lineTo(0.15, -0.003);
+    s.quadraticCurveTo(0.1, -0.011, 0.06, -0.014);
+    s.quadraticCurveTo(0.02, -0.011, 0, -0.006);
+    s.closePath();
+    return s;
+  }
+
+  function bladeTipShape(): THREE.Shape {
+    const s = new THREE.Shape();
+    s.moveTo(0.115, 0.009);
+    s.quadraticCurveTo(0.135, 0.007, 0.15, 0.003);
+    s.lineTo(0.15, -0.003);
+    s.quadraticCurveTo(0.135, -0.007, 0.115, -0.009);
+    s.closePath();
+    return s;
+  }
 
   // Body shell
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.075, 0.26), shellMat);
@@ -77,12 +100,15 @@ function buildProceduralDrone(): THREE.Group {
   vent.rotation.y = 0.5;
   group.add(vent);
 
-  // Paired obstacle-avoidance sensors on the nose
-  [-1, 1].forEach((s) => {
-    const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), trimMat);
-    sensor.position.set(s * 0.085, 0.018, 0.125);
-    group.add(sensor);
-  });
+  // Paired obstacle-avoidance sensors on the nose — a larger lens-style
+  // sensor on one side, a small dot sensor on the other (per reference).
+  const sensorLens = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.012, 12), trimMat);
+  sensorLens.rotation.x = Math.PI / 2;
+  sensorLens.position.set(-0.045, 0.03, 0.128);
+  group.add(sensorLens);
+  const sensorDot = new THREE.Mesh(new THREE.SphereGeometry(0.01, 10, 10), trimMat);
+  sensorDot.position.set(0.075, 0.02, 0.125);
+  group.add(sensorDot);
 
   // 3-axis gimbal housing + lens, slung below the nose
   const gimbal = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.075), trimMat);
@@ -112,8 +138,38 @@ function buildProceduralDrone(): THREE.Group {
   const armAngles = [45, 135, 225, 315].map((deg) => (deg * Math.PI) / 180);
   const rotorGroups: THREE.Group[] = [];
 
+  function makeBlade(): THREE.Group {
+    const bladeGroup = new THREE.Group();
+
+    const mainGeo = new THREE.ExtrudeGeometry(bladeShape(), { depth: 0.003, bevelEnabled: false });
+    mainGeo.translate(0, 0, -0.0015);
+    mainGeo.rotateX(-Math.PI / 2);
+    bladeGroup.add(new THREE.Mesh(mainGeo, bladeMat));
+
+    const tipGeo = new THREE.ExtrudeGeometry(bladeTipShape(), { depth: 0.0032, bevelEnabled: false });
+    tipGeo.translate(0, 0, -0.0016);
+    tipGeo.rotateX(-Math.PI / 2);
+    bladeGroup.add(new THREE.Mesh(tipGeo, accentMat));
+
+    return bladeGroup;
+  }
+
   armAngles.forEach((angle) => {
     const dir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+
+    // Hinge knuckle where the arm folds against the body, with two small
+    // fastener studs — visible in the reference's arm-root close-up.
+    const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.017, 0.026, 12), shellMat);
+    knuckle.position.copy(dir.clone().multiplyScalar(0.07));
+    knuckle.position.y = 0.014;
+    knuckle.rotation.z = Math.PI / 2;
+    knuckle.rotation.y = -angle;
+    group.add(knuckle);
+    [-1, 1].forEach((s) => {
+      const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.004, 8), trimMat);
+      stud.position.copy(knuckle.position).setY(knuckle.position.y + s * 0.011);
+      group.add(stud);
+    });
 
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.017, armLength, 8), shellMat);
     arm.position.copy(dir.clone().multiplyScalar(armLength / 2));
@@ -138,17 +194,8 @@ function buildProceduralDrone(): THREE.Group {
     rotorGroup.position.copy(motorPos).setY(motorPos.y + 0.017);
 
     for (let i = 0; i < 2; i++) {
-      const blade = new THREE.Group();
+      const blade = makeBlade();
       blade.rotation.y = i * Math.PI;
-
-      const main = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.003, 0.022), bladeMat);
-      main.position.x = 0.075;
-      blade.add(main);
-
-      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.0035, 0.022), accentMat);
-      tip.position.x = 0.1625;
-      blade.add(tip);
-
       rotorGroup.add(blade);
     }
 
