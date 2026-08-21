@@ -40,29 +40,27 @@ public/
 above each section's background footage and below its text (z-index 6; text sits at z-index 10,
 the header at 50).
 
-The drone model is `public/models/drone.glb` — a real mesh (curved shell, modelled gimbal, proper
-prop geometry), loaded via `GLTFLoader` in `initDroneOverlay()` (`src/scripts/drone.ts`). It's
-optimised from a much larger source asset (dedup/weld/prune + WebP textures, ~4.6MB) with
-**no `EXT_meshopt_compression`/Draco on purpose** — those need a WASM decoder at runtime, and
-strict CSPs (e.g. this project's own artifact-preview sandbox) can silently block WASM
-instantiation, which previously made the model fail to load with no visible error. If you
-re-export the model, keep that constraint: `@gltf-transform/cli optimize --compress false`.
+The drone itself is **hand-authored Three.js geometry** in `buildProceduralDrone()`
+(`src/scripts/drone.ts`) — no external model file, no network fetch, no asset licensing question.
+Its shape and proportions were corrected against a real reference photo (dark paddle-shaped
+propeller blades, hinge knuckles at each arm root, two visually distinct nose sensors, a rounded
+gimbal camera pod) rather than guessed.
 
-A `buildProceduralDrone()` fallback (primitives only — boxes, cylinders, an extruded blade
-profile) renders immediately and is swapped out the moment the GLB resolves, so the overlay is
-never blank while the ~4.6MB model loads, and never breaks outright if it fails to. Its geometry
-was itself hand-corrected against a reference photo (dark paddle-shaped blades, hinge knuckles,
-differentiated nose sensors) — the fallback should look reasonable on its own even though it's
-rarely what's on screen.
+The single biggest lever for "looks like a manufactured product" vs. "looks like a blockout" is
+**not** flat-faced `BoxGeometry` — sharp box edges never catch light like a real product's
+housing does, no matter how many of them there are. Every body/housing part instead uses
+[`RoundedBoxGeometry`](https://threejs.org/docs/#examples/en/geometries/RoundedBoxGeometry)
+(bevelled edges, smooth normals), and materials are `MeshPhysicalMaterial` with a light clearcoat
+layer (satin-plastic shell/trim, glossy lens) rather than flat `MeshStandardMaterial`.
 
-The GLB drives its propellers via named skeleton joints (`prop_1_jnt`..`prop_4_jnt`), found by
-`model.traverse()` after load and spun directly each frame — its baked-in "hover" animation clip
-is deliberately **not** played, because it carries a large body-relative vertical excursion that
-fights the site's own flight-position waypoints and periodically carried the model out of frame.
+Lighting matters just as much as geometry for that read: the scene sets `scene.environment` from
+a `PMREMGenerator`-baked `RoomEnvironment` (image-based lighting, so the clearcoat/plastic
+materials get real reflections instead of a flat matte look), plus a 3-point rig (key/fill/rim
+directional lights + a small red accent point light) and `ACESFilmicToneMapping` for contrast
+that doesn't blow out highlights on the rounded shell.
 
-Local +Z is "forward" (the direction the camera gimbal points), so a rig at `rotation.y = 0`
-faces the viewer; the GLB's own axes needed an empirically-found offset (`rotationY: 1.57` at the
-hero waypoint) to achieve that, since it isn't authored with that convention.
+Local +Z is "forward" (the direction the gimbal camera points), so a rig at `rotation.y = 0`
+faces the viewer.
 
 As you scroll, the drone eases toward a waypoint associated with whichever section is centred in
 the viewport (`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). On
@@ -71,9 +69,8 @@ scroll-follow easing, which converges too fast on its own to read as motion).
 
 Respects `prefers-reduced-motion`: the entrance, idle bob and rotor spin all freeze.
 
-**To swap the model:** replace `public/models/drone.glb` with another GLB (no meshopt/Draco —
-see above) and re-check the `prop_1_jnt`-style joint names / the `rotationY` "faces viewer"
-calibration, since both are specific to this asset's rig and axes.
+**To restyle the drone:** edit `buildProceduralDrone()` directly — it's organised into named
+sections (body, sensors, gimbal, legs, arms/motors/props). Rotors spin via `group.userData.rotors`.
 
 ## Video backgrounds
 
