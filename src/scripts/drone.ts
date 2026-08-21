@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
@@ -17,7 +18,7 @@ interface Waypoint {
 // x/y are viewport fractions (0-1); tuned to clear each section's text blocks
 // (see README for the layout each targets empty space around).
 const WAYPOINTS: Waypoint[] = [
-  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 0.18, tilt: 0.08 },
+  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 1.57, tilt: 0.08 },
   { id: 'about', x: 0.86, y: 0.78, scale: 0.7, rotationY: -0.7, tilt: -0.05 },
   { id: 'services', x: 0.5, y: 0.1, scale: 0.75, rotationY: 0.9, tilt: 0.1 },
   { id: 'use-cases', x: 0.87, y: 0.22, scale: 0.62, rotationY: -0.4, tilt: -0.08 },
@@ -25,6 +26,9 @@ const WAYPOINTS: Waypoint[] = [
   { id: 'contact', x: 0.8, y: 0.1, scale: 0.9, rotationY: -0.3, tilt: -0.04 },
 ];
 
+// Fallback drone, shown immediately and swapped out the instant the real
+// GLB (public/models/drone.glb) finishes loading — so the overlay is never
+// blank while the model loads, and never breaks outright if it fails to.
 // Hand-authored from primitives, styled after a compact folding-arm
 // consumer quadcopter photographed for reference (light satin-plastic shell,
 // front 3-axis gimbal camera, paired obstacle-avoidance lenses, dark
@@ -34,7 +38,8 @@ const WAYPOINTS: Waypoint[] = [
 // "blockout"; flat box faces do not, no matter how many of them there are.
 // Local +Z is "forward" (the direction the gimbal camera points); a rig at
 // rotation.y = 0 therefore faces the viewer, since the camera looks back
-// down -Z toward the origin.
+// down -Z toward the origin. (The GLB isn't authored to that convention —
+// see the empirically-found rotationY offset on the hero waypoint below.)
 function buildProceduralDrone(): THREE.Group {
   const group = new THREE.Group();
 
@@ -257,7 +262,7 @@ export function initDroneOverlay() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -268,30 +273,37 @@ export function initDroneOverlay() {
   // look flat ambient + directional-only lighting produces — this is most of
   // what makes MeshPhysicalMaterial read as "product photo" rather than
   // "game asset". Combined with a 3-point rig (key/fill/rim) for direction.
+  // The GLB originally shipped a fully-metallic, fully-rough, pure-white
+  // fallback material (its real colour texture lived inside a legacy
+  // KHR_materials_pbrSpecularGlossiness extension three.js doesn't parse) —
+  // converted to a proper metallic-roughness baseColorTexture at the asset
+  // level (see README), so this lighting rig no longer needs to fake colour
+  // via a tinted rim light.
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.5;
   pmrem.dispose();
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
-  const key = new THREE.DirectionalLight(0xfff4e6, 2.2);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  const key = new THREE.DirectionalLight(0xfff4e6, 1.4);
   key.position.set(2.4, 3.2, 3.6);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xdce8ff, 0.7);
+  const fill = new THREE.DirectionalLight(0xdce8ff, 0.45);
   fill.position.set(-3, 0.6, 1.6);
   scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffffff, 1.1);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.6);
   rim.position.set(-1.2, 1.8, -3.2);
   scene.add(rim);
-  const accentLight = new THREE.PointLight(0xdd3333, 0.6, 3, 2);
+  const accentLight = new THREE.PointLight(0xdd3333, 0.4, 3, 2);
   accentLight.position.set(0.6, -0.4, 1.4);
   scene.add(accentLight);
 
   const rig = new THREE.Group();
   scene.add(rig);
 
-  const drone = buildProceduralDrone();
-  rig.add(drone);
-  const rotorGroups: THREE.Object3D[] = drone.userData.rotors ?? [];
+  const procedural = buildProceduralDrone();
+  rig.add(procedural);
+  let rotorGroups: THREE.Object3D[] = procedural.userData.rotors ?? [];
 
   function resize() {
     const w = window.innerWidth;
@@ -302,6 +314,53 @@ export function initDroneOverlay() {
   }
   resize();
   window.addEventListener('resize', resize);
+
+  // Try loading the real model; keep the procedural drone as a live fallback
+  // until (and unless) the GLTF resolves. scene.environment (set above)
+  // applies to its materials automatically, so it gets the same PBR
+  // lighting as the fallback.
+  const loader = new GLTFLoader();
+  loader.load(
+    '/models/drone.glb',
+    (gltf) => {
+      rig.remove(procedural);
+      const model = gltf.scene;
+
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const targetSize = 1.6;
+      model.scale.setScalar(targetSize / maxDim);
+
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      model.position.sub(center.multiplyScalar(targetSize / maxDim));
+
+      rig.add(model);
+
+      // The source rig drives its propellers via named skeleton joints
+      // (prop_1_jnt..prop_4_jnt) rather than a simple parent group — spin
+      // those directly each frame instead of relying on the "hover" clip,
+      // which only animates the body.
+      const propJoints: THREE.Object3D[] = [];
+      model.traverse((child) => {
+        if (/^prop_\d+_jnt/.test(child.name)) propJoints.push(child);
+      });
+      if (propJoints.length) rotorGroups = propJoints;
+
+      // Deliberately not playing the source "hover" clip: it bakes in a
+      // large body-relative vertical excursion (presumably meant for a
+      // dedicated showreel shot), which fights our own flight-position
+      // waypoints and periodically carried the model out of frame. Rotor
+      // spin above is independent of it and unaffected.
+    },
+    undefined,
+    (err) => {
+      // GLB failed to load (missing/invalid) — procedural drone stays in place.
+      console.warn('drone.glb failed to load, using procedural fallback', err);
+    }
+  );
 
   // Flight target state
   const current = { x: 0.7, y: 0.42, scale: 1.15, rotationY: 0.5, tilt: 0.08 };
