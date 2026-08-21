@@ -102,23 +102,27 @@ Every section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) re
 3. A dark scrim gradient (for text legibility).
 4. Film-grain texture.
 
-**Right now no video files are wired in** — only the graded-gradient placeholder shows, matching
-the original design handoff. To add real stock footage:
+**The hero section has real footage wired in** (`public/videos/hero.mp4`) — the other sections
+still show the graded-gradient placeholder, matching the original design handoff. To add footage
+to another section:
 
 1. Source clips (e.g. Pexels, Coverr, Mixkit — check each clip's licence permits this commercial
-   use) at roughly 1920×1080, and compress them (H.264 `.mp4`, ~5–8 Mbps, 10–20s, muted, looping
+   use, or use your own) at up to 1920×1080, and compress them (H.264 `.mp4`, muted, looping
    cleanly) with something like:
    ```bash
-   ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf scale=1920:-2 public/videos/hero.mp4
+   ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
    ```
+   `-movflags +faststart` moves the moov atom to the front so the file is scrubbable/streamable
+   before it's fully downloaded — needed for the hero, harmless elsewhere.
 2. Drop the file at `public/videos/<name>.mp4`.
 3. Pass `videoSrc="/videos/<name>.mp4"` to the relevant section's `<SectionBackdrop>` call (in
    `Hero.astro`, `About.astro`, `Services.astro`, `UseCases.astro`, `Clients.astro`,
    `Contact.astro`).
 
 The hero section additionally **scrubs** its video to scroll position (see the inline script in
-`Hero.astro`) rather than autoplaying — once `heroVideo` has a real `src`, scrolling through the
-hero will scrub through the clip like a showreel.
+`Hero.astro`) rather than autoplaying — scrolling through the hero scrubs through the clip like a
+showreel. This needs `preload="metadata"` on the `<video>` (set in `SectionBackdrop.astro`) so
+`duration` is available as soon as scrolling starts.
 
 ## SEO
 
