@@ -18,7 +18,7 @@ interface Waypoint {
 // x/y are viewport fractions (0-1); tuned to clear each section's text blocks
 // (see README for the layout each targets empty space around).
 const WAYPOINTS: Waypoint[] = [
-  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 1.57, tilt: 0.08 },
+  { id: 'hero', x: 0.7, y: 0.4, scale: 1.15, rotationY: 3.05, tilt: 0.08 },
   { id: 'about', x: 0.86, y: 0.78, scale: 0.7, rotationY: -0.7, tilt: -0.05 },
   { id: 'services', x: 0.5, y: 0.1, scale: 0.75, rotationY: 0.9, tilt: 0.1 },
   { id: 'use-cases', x: 0.87, y: 0.22, scale: 0.62, rotationY: -0.4, tilt: -0.08 },
@@ -339,21 +339,14 @@ export function initDroneOverlay() {
 
       rig.add(model);
 
-      // The source rig drives its propellers via named skeleton joints
-      // (prop_1_jnt..prop_4_jnt) rather than a simple parent group — spin
-      // those directly each frame instead of relying on the "hover" clip,
-      // which only animates the body.
-      const propJoints: THREE.Object3D[] = [];
-      model.traverse((child) => {
-        if (/^prop_\d+_jnt/.test(child.name)) propJoints.push(child);
-      });
-      if (propJoints.length) rotorGroups = propJoints;
-
-      // Deliberately not playing the source "hover" clip: it bakes in a
-      // large body-relative vertical excursion (presumably meant for a
-      // dedicated showreel shot), which fights our own flight-position
-      // waypoints and periodically carried the model out of frame. Rotor
-      // spin above is independent of it and unaffected.
+      // This asset has no rig/animation and no naming convention isolating
+      // the propeller blades (672 mesh nodes, mostly auto-generated names
+      // like "Object_44" — everything from individual screws to the props
+      // themselves) — unlike the previous model's prop_1_jnt..prop_4_jnt
+      // skeleton, there's no reliable way to find just the blades to spin
+      // them independently. The propeller fold-flat pose is still fully
+      // modelled and detailed; it's just static rather than spinning.
+      rotorGroups = [];
     },
     undefined,
     (err) => {

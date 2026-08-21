@@ -40,42 +40,40 @@ public/
 above each section's background footage and below its text (z-index 6; text sits at z-index 10,
 the header at 50).
 
-The primary drone model is `public/models/drone.glb`, loaded via `GLTFLoader` in
-`initDroneOverlay()` (`src/scripts/drone.ts`). A `buildProceduralDrone()` fallback (primitives
-only — `RoundedBoxGeometry`, extruded blade profiles, no external file) renders immediately and
-is swapped out the instant the GLB resolves, so the overlay is never blank while the ~5MB model
-loads, and never breaks outright if it fails to. Its geometry was itself corrected against a
-reference photo (dark paddle-shaped blades, hinge knuckles, two visually distinct nose sensors),
-so it looks reasonable on its own even though it's rarely what's on screen.
+The primary drone model is `public/models/drone.glb` (a DJI Mini 3 Pro reference scan), loaded via
+`GLTFLoader` in `initDroneOverlay()` (`src/scripts/drone.ts`). A `buildProceduralDrone()` fallback
+(primitives only — `RoundedBoxGeometry`, extruded blade profiles, no external file) renders
+immediately and is swapped out the instant the GLB resolves, so the overlay is never blank while
+the ~3.6MB model loads, and never breaks outright if it fails to.
 
-**The GLB's material needed a real fix, not a lighting workaround.** As shipped, its material had
-`metallic: 1, roughness: 1, baseColorFactor: white`, with **no usable base-colour texture** —
-the real diffuse/colour texture only existed inside a legacy `KHR_materials_pbrSpecularGlossiness`
-extension that three.js's `GLTFLoader` doesn't parse (silently ignored, no error). Every colour
-you saw on earlier versions of this model was really just a tinted light reflecting off a flat
-white metal surface — not the actual texture. That's why tuning lighting/exposure alone couldn't
-fix it: there was no colour data to reveal. Converted properly at the asset level with
-`@gltf-transform/functions`' `metalRough()` (bakes the spec-gloss data into a standard
-metallic-roughness `baseColorTexture` three.js can read), then re-run through the same
-`webp`-texture-compress + `dedup`/`weld`/`prune` optimize pass as before (**no
-meshopt/Draco compression** — needs a WASM decoder, which strict CSPs can silently block; see
-git history for the exact commands used).
+**The source file was 13.6MB / ~583k render vertices** — an extremely high-detail scan (down to
+individual screws) unnecessary for a background element rendered at ~150–350px on screen.
+Optimised with `@gltf-transform/cli optimize` — `simplify` (ratio 0.12) cut it to ~133k vertices,
+plus `dedup`/`weld`/`join`/`palette`/`prune` and WebP texture compression at 1024px, landing at
+3.64MB with no perceptible quality loss at this render scale (**no meshopt/Draco compression** —
+needs a WASM decoder, which strict CSPs can silently block silently; see git history for the exact
+command). Unlike an earlier candidate model, this one's materials are standard glTF
+metallic-roughness with real baseColorTextures — `extensionsUsed: none` on the source file — so no
+material conversion was needed, just geometry/texture reduction.
 
-Lighting still matters for how that texture reads: the scene sets `scene.environment` from a
-`PMREMGenerator`-baked `RoomEnvironment` (image-based lighting, so the clearcoat/plastic
-materials get real reflections instead of a flat matte look), plus a 3-point rig (key/fill/rim
-directional lights + a small red accent point light) and `ACESFilmicToneMapping`. Keep the
-overall intensity conservative if you swap the model — a fully-metallic fallback material (or any
-low-roughness one) clips to a flat white blob fast once `scene.environment` is contributing too.
+**Propellers are static, not spinning, on this model.** It has no animation and no rig, and is
+fragmented into ~670 mesh nodes with auto-generated, uninformative names (`Object_44`,
+`Cylinder_10`, …) — there's no reliable way to isolate just the propeller blades to spin them
+independently the way an earlier model's `prop_1_jnt`-style skeleton allowed. The fold-flat
+propeller pose is still fully modelled and detailed; it just doesn't rotate.
 
-The GLB drives its propellers via named skeleton joints (`prop_1_jnt`..`prop_4_jnt`), found by
-`model.traverse()` after load and spun directly each frame — its baked-in "hover" animation clip
-is deliberately **not** played, because it carries a large body-relative vertical excursion that
-fights the site's own flight-position waypoints and periodically carried the model out of frame.
+Lighting matters for how the model's materials read: the scene sets `scene.environment` from a
+`PMREMGenerator`-baked `RoomEnvironment` (image-based lighting, so the plastic/clearcoat materials
+get real reflections instead of a flat matte look), plus a 3-point rig (key/fill/rim directional
+lights + a small red accent point light) and `ACESFilmicToneMapping`. Keep the overall intensity
+conservative if you swap the model — a fully-metallic or otherwise low-roughness material clips to
+a flat white/grey blob fast once `scene.environment` is contributing too, and there's no way to
+recover surface colour with more lighting if the material has none to begin with (as happened with
+an earlier candidate model — see git history).
 
 Local +Z is "forward" (the direction the gimbal camera points) for the procedural fallback, so a
 rig at `rotation.y = 0` faces the viewer; the GLB's own axes needed an empirically-found offset
-(`rotationY: 1.57` at the hero waypoint) to achieve that, since it isn't authored to that
+(`rotationY: 3.05` at the hero waypoint) to achieve that, since it isn't authored to that
 convention.
 
 As you scroll, the drone eases toward a waypoint associated with whichever section is centred in
