@@ -9,8 +9,8 @@ import SectionBackdrop from './SectionBackdrop.astro';
         gradient="radial-gradient(120% 80% at 30% 18%, #262630, #14141a 48%, #0a0a0c 80%)"
         animation="kb"
         videoId="heroVideo"
+        videoSrc="/videos/hero.mp4"
       />
-      <p class="footage-note">Showreel footage — drop an .mp4 into <code>/public/videos/hero.mp4</code></p>
     </div>
 
     <div id="heroContent" class="hero-content">
@@ -54,19 +54,6 @@ import SectionBackdrop from './SectionBackdrop.astro';
     overflow: hidden;
     background: var(--color-bg-media);
     will-change: transform, inset, border-radius;
-  }
-
-  .footage-note {
-    position: absolute;
-    right: 26px;
-    top: 26px;
-    font-size: 10.5px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.35);
-    margin: 0;
-    max-width: 40%;
-    text-align: right;
   }
 
   .hero-content {
@@ -145,10 +132,6 @@ import SectionBackdrop from './SectionBackdrop.astro';
   }
 
   @media (max-width: 640px) {
-    .footage-note {
-      display: none;
-    }
-
     .credibility {
       line-height: 2;
     }
