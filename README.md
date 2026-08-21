@@ -40,25 +40,40 @@ public/
 above each section's background footage and below its text (z-index 6; text sits at z-index 10,
 the header at 50).
 
-The drone itself is **hand-authored Three.js geometry** in `buildProceduralDrone()`
-(`src/scripts/drone.ts`) — primitives only (boxes, cylinders, a torus), no external model file.
-That was a deliberate choice, not a fallback: an earlier version loaded a `.glb`, but even a
-well-optimised one (1.2MB) pulled in loader/decoder complexity and a network fetch that turned out
-to be genuinely fragile under some CSPs (data-URI embeds routed through `fetch()`, which strict
-`connect-src` policies can block silently). Pure procedural geometry has zero asset weight, zero
-network dependency, and no third-party licensing question. Local +Z is "forward" (the direction
-the camera gimbal points), so a rig at `rotation.y = 0` faces the viewer.
+The drone model is `public/models/drone.glb` — a real mesh (curved shell, modelled gimbal, proper
+prop geometry), loaded via `GLTFLoader` in `initDroneOverlay()` (`src/scripts/drone.ts`). It's
+optimised from a much larger source asset (dedup/weld/prune + WebP textures, ~4.6MB) with
+**no `EXT_meshopt_compression`/Draco on purpose** — those need a WASM decoder at runtime, and
+strict CSPs (e.g. this project's own artifact-preview sandbox) can silently block WASM
+instantiation, which previously made the model fail to load with no visible error. If you
+re-export the model, keep that constraint: `@gltf-transform/cli optimize --compress false`.
+
+A `buildProceduralDrone()` fallback (primitives only — boxes, cylinders, an extruded blade
+profile) renders immediately and is swapped out the moment the GLB resolves, so the overlay is
+never blank while the ~4.6MB model loads, and never breaks outright if it fails to. Its geometry
+was itself hand-corrected against a reference photo (dark paddle-shaped blades, hinge knuckles,
+differentiated nose sensors) — the fallback should look reasonable on its own even though it's
+rarely what's on screen.
+
+The GLB drives its propellers via named skeleton joints (`prop_1_jnt`..`prop_4_jnt`), found by
+`model.traverse()` after load and spun directly each frame — its baked-in "hover" animation clip
+is deliberately **not** played, because it carries a large body-relative vertical excursion that
+fights the site's own flight-position waypoints and periodically carried the model out of frame.
+
+Local +Z is "forward" (the direction the camera gimbal points), so a rig at `rotation.y = 0`
+faces the viewer; the GLB's own axes needed an empirically-found offset (`rotationY: 1.57` at the
+hero waypoint) to achieve that, since it isn't authored with that convention.
 
 As you scroll, the drone eases toward a waypoint associated with whichever section is centred in
-the viewport (`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). Rotors
-spin continuously via `group.userData.rotors`. On load it flies in from below the viewport over a
-1.6s entrance tween (separate from the snappier scroll-follow easing, which converges too fast on
-its own to read as motion).
+the viewport (`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). On
+load it flies in from below the viewport over a 1.6s entrance tween (separate from the snappier
+scroll-follow easing, which converges too fast on its own to read as motion).
 
 Respects `prefers-reduced-motion`: the entrance, idle bob and rotor spin all freeze.
 
-**To restyle the drone:** edit `buildProceduralDrone()` directly — it's ~100 lines of primitive
-geometry with named sections (body, sensors, gimbal, legs, arms/motors/props).
+**To swap the model:** replace `public/models/drone.glb` with another GLB (no meshopt/Draco —
+see above) and re-check the `prop_1_jnt`-style joint names / the `rotationY` "faces viewer"
+calibration, since both are specific to this asset's rig and axes.
 
 ## Video backgrounds
 
