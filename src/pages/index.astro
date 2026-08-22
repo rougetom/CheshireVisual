@@ -8,7 +8,7 @@ import UseCases from '@/components/UseCases.astro';
 import Clients from '@/components/Clients.astro';
 import Contact from '@/components/Contact.astro';
 import Footer from '@/components/Footer.astro';
-import DroneOverlay from '@/components/DroneOverlay.astro';
+import BackgroundVideo from '@/components/BackgroundVideo.astro';
 ---
 
 <Layout
@@ -17,7 +17,12 @@ import DroneOverlay from '@/components/DroneOverlay.astro';
   path="/"
 >
   <Header />
-  <DroneOverlay />
+  <BackgroundVideo
+    grade="radial-gradient(120% 80% at 30% 18%, #262630, #14141a 48%, #0a0a0c 80%)"
+    scrim="linear-gradient(180deg, transparent 46%, rgba(0,0,0,.82))"
+    anim="kb"
+    video="/videos/hero.mp4"
+  />
 
   <main id="main">
     <Hero />

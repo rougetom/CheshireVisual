@@ -1,15 +1,15 @@
 ---
-import SectionBackdrop from './SectionBackdrop.astro';
 ---
 
-<section id="contact" class="contact">
-  <SectionBackdrop
-    gradient="radial-gradient(120% 100% at 50% 30%, #26262f, #131318 50%, #0a0a0c 82%)"
-    animation="kb2"
-    scrim="radial-gradient(120% 100% at 50% 40%, transparent 30%, rgba(0,0,0,.82))"
-    videoId="contactVideo"
-  />
-
+<section
+  id="contact"
+  class="contact"
+  data-shot
+  data-grade="radial-gradient(120% 100% at 50% 30%, #26262f, #131318 50%, #0a0a0c 82%)"
+  data-scrim="radial-gradient(120% 100% at 50% 40%, transparent 30%, rgba(0,0,0,.82))"
+  data-anim="kb2"
+  data-video="/videos/hero.mp4"
+>
   <div class="inner">
     <p class="kicker" data-reveal>05 / Start a project</p>
 
@@ -35,13 +35,16 @@ import SectionBackdrop from './SectionBackdrop.astro';
 <style>
   .contact {
     position: relative;
-    overflow: hidden;
     padding: 130px var(--section-x) 120px;
   }
 
   .inner {
     position: relative;
-    z-index: 10;
+    z-index: 1;
+  }
+
+  .row [data-reveal]:nth-child(2) {
+    transition-delay: 0.1s;
   }
 
   .kicker {

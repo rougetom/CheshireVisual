@@ -3,13 +3,13 @@
 Marketing site for [cheshirevisual.co.uk](https://cheshirevisual.co.uk) — a drone, aerial and 360°
 photography/video studio based in Cheshire, serving the North West of England.
 
-Built with [Astro](https://astro.build) for fast, SEO-first static output. A 3D drone (Three.js)
-flies across the page as you scroll, layered over per-section video/gradient backdrops.
+Built with [Astro](https://astro.build) for fast, SEO-first static output. A single fixed video
+backdrop plays behind the whole page, tinted differently per section, while each section's content
+fades and flies in toward the viewer as it scrolls into view — as if it's part of the same flight.
 
 ## Stack
 
 - **Astro** — static-first rendering, minimal client JS, great Core Web Vitals out of the box.
-- **Three.js** — the scroll-driven drone overlay (`src/scripts/drone.ts`).
 - **@fontsource** — self-hosted Space Grotesk + Instrument Serif (no third-party font requests).
 - **@astrojs/sitemap** — automatic `sitemap-index.xml` at build time.
 
@@ -27,102 +27,74 @@ npm run preview    # serve the production build locally
 ```
 src/
   components/    Section components (Header, Hero, About, Services, UseCases, Clients, Contact, Footer)
+                 BackgroundVideo.astro — the fixed video backdrop (see below)
   layouts/       Layout.astro — shared <head>, SEO
-  scripts/       drone.ts (3D overlay), reveal.ts (scroll-reveal)
+  scripts/       backdrop.ts (video backdrop crossfade), reveal.ts (fly-in scroll-reveal)
   styles/        tokens.css (design tokens), global.css
 public/
-  videos/        drop section background footage here (see below)
+  videos/        section background footage lives here (see below)
 ```
-
-## The 3D drone
-
-`src/components/DroneOverlay.astro` renders a fixed, full-viewport, transparent `<canvas>` sitting
-above each section's background footage and below its text (z-index 6; text sits at z-index 10,
-the header at 50).
-
-The primary drone model is `public/models/drone.glb` (a DJI Mini 3 Pro reference scan), loaded via
-`GLTFLoader` in `initDroneOverlay()` (`src/scripts/drone.ts`). A `buildProceduralDrone()` fallback
-(primitives only — `RoundedBoxGeometry`, extruded blade profiles, no external file) renders
-immediately and is swapped out the instant the GLB resolves, so the overlay is never blank while
-the ~3.6MB model loads, and never breaks outright if it fails to.
-
-**The source file was 13.6MB / ~583k render vertices** — an extremely high-detail scan (down to
-individual screws) unnecessary for a background element rendered at ~150–350px on screen.
-Optimised with `@gltf-transform/cli optimize` — `simplify` (ratio 0.12) cut it to ~133k vertices,
-plus `dedup`/`weld`/`join`/`palette`/`prune` and WebP texture compression at 1024px, landing at
-3.64MB with no perceptible quality loss at this render scale (**no meshopt/Draco compression** —
-needs a WASM decoder, which strict CSPs can silently block silently; see git history for the exact
-command). Unlike an earlier candidate model, this one's materials are standard glTF
-metallic-roughness with real baseColorTextures — `extensionsUsed: none` on the source file — so no
-material conversion was needed, just geometry/texture reduction.
-
-**Propellers are static, not spinning, on this model.** It has no animation and no rig, and is
-fragmented into ~670 mesh nodes with auto-generated, uninformative names (`Object_44`,
-`Cylinder_10`, …) — there's no reliable way to isolate just the propeller blades to spin them
-independently the way an earlier model's `prop_1_jnt`-style skeleton allowed. The fold-flat
-propeller pose is still fully modelled and detailed; it just doesn't rotate.
-
-Lighting matters for how the model's materials read: the scene sets `scene.environment` from a
-`PMREMGenerator`-baked `RoomEnvironment` (image-based lighting, so the plastic/clearcoat materials
-get real reflections instead of a flat matte look), plus a 3-point rig (key/fill/rim directional
-lights + a small red accent point light) and `ACESFilmicToneMapping`. Keep the overall intensity
-conservative if you swap the model — a fully-metallic or otherwise low-roughness material clips to
-a flat white/grey blob fast once `scene.environment` is contributing too, and there's no way to
-recover surface colour with more lighting if the material has none to begin with (as happened with
-an earlier candidate model — see git history).
-
-Local +Z is "forward" (the direction the gimbal camera points) for the procedural fallback, so a
-rig at `rotation.y = 0` faces the viewer; the GLB's own axes needed an empirically-found offset
-(`rotationY: 3.05` at the hero waypoint) to achieve that, since it isn't authored to that
-convention.
-
-As you scroll, the drone eases toward a waypoint associated with whichever section is centred in
-the viewport (`WAYPOINTS` in `drone.ts` — tweak position/scale/rotation per section there). On
-load it flies in from below the viewport over a 1.6s entrance tween (separate from the snappier
-scroll-follow easing, which converges too fast on its own to read as motion).
-
-Respects `prefers-reduced-motion`: the entrance, idle bob and rotor spin all freeze.
-
-**To swap the model:** replace `public/models/drone.glb` with another GLB (check it doesn't rely
-on meshopt/Draco, or on `KHR_materials_pbrSpecularGlossiness` without a real fallback texture —
-see above) and re-check the `prop_1_jnt`-style joint names / the `rotationY` "faces viewer"
-calibration, since both are specific to this asset's rig and axes. **To restyle the fallback:**
-edit `buildProceduralDrone()` directly — it's organised into named sections (body, sensors,
-gimbal, legs, arms/motors/props).
 
 ## Video backgrounds
 
-Every section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) renders via
-`SectionBackdrop.astro`, which layers, back to front:
+`src/components/BackgroundVideo.astro` renders **one** `<video>`, fixed to the viewport
+(`position: fixed`, z-index 0 — `main`/the footer sit at z-index 1, the header at 50), sitting
+behind the entire page rather than inside any one section. Back to front, it layers:
 
-1. A graded CSS gradient with a slow "ken burns" drift — this is the fallback/poster and renders
-   immediately (zero network cost).
-2. An optional `<video muted loop playsinline>` (autoplaying footage) — enabled by passing a
-   `videoId`/`videoSrc` prop.
+1. A graded CSS gradient with a slow "ken burns" drift — renders immediately, zero network cost,
+   and is what's visible while the video is still loading (or under `prefers-reduced-motion`,
+   which hides the video entirely).
+2. The `<video muted loop playsinline autoplay>` itself.
 3. A dark scrim gradient (for text legibility).
 4. Film-grain texture.
 
-**The hero section has real footage wired in** (`public/videos/hero.mp4`) — the other sections
-still show the graded-gradient placeholder, matching the original design handoff. To add footage
-to another section:
+Every section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) is just a
+`<section data-shot data-grade="..." data-scrim="..." data-anim="kb|kb2" data-video="...">` — no
+per-section backdrop markup. `src/scripts/backdrop.ts` watches every `[data-shot]` section with an
+`IntersectionObserver`, and whichever has the most viewport overlap right now has its
+grade/scrim/video values applied to the fixed backdrop, crossfading the two ambient tint layers
+(grade has two stacked instances, scrim too — the incoming one fades in as the outgoing one fades
+out). The hero's shot is also rendered server-side into the first grade/scrim layer via
+`BackgroundVideo`'s props, so it's already correct before any JS runs.
 
-1. Source clips (e.g. Pexels, Coverr, Mixkit — check each clip's licence permits this commercial
-   use, or use your own) at up to 1920×1080, and compress them (H.264 `.mp4`, muted, looping
-   cleanly) with something like:
-   ```bash
-   ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
-   ```
-   `-movflags +faststart` moves the moov atom to the front so the file is scrubbable/streamable
-   before it's fully downloaded — needed for the hero, harmless elsewhere.
-2. Drop the file at `public/videos/<name>.mp4`.
-3. Pass `videoSrc="/videos/<name>.mp4"` to the relevant section's `<SectionBackdrop>` call (in
-   `Hero.astro`, `About.astro`, `Services.astro`, `UseCases.astro`, `Clients.astro`,
-   `Contact.astro`).
+**Every section points at the same clip today** (`public/videos/hero.mp4`) — only the grade/scrim
+tint actually changes per section right now. The mechanism supports different footage per section
+already: give a section its own `data-video`, and the backdrop script swaps the `<video>`'s `src`
+to it once that section becomes dominant (skipped entirely when the target clip is unchanged, which
+is why nothing reloads today). That swap is a hard cut, not a crossfade — there's only one `<video>`
+element. If/when real per-shot footage lands, upgrade `backdrop.ts` to a second `<video>` layer
+(mirroring how the grade/scrim pairs already crossfade) for a smooth transition between clips.
 
-The hero section additionally **scrubs** its video to scroll position (see the inline script in
-`Hero.astro`) rather than autoplaying — scrolling through the hero scrubs through the clip like a
-showreel. This needs `preload="metadata"` on the `<video>` (set in `SectionBackdrop.astro`) so
-`duration` is available as soon as scrolling starts.
+To add or replace footage:
+
+```bash
+ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
+```
+
+Drop the result at `public/videos/<name>.mp4` (H.264, muted, looping cleanly — no meshopt/Draco-style
+concerns here, that constraint was specific to the drone model this project used to have) and point
+the relevant section's `data-video` at it.
+
+## Content fly-in
+
+Anything marked `data-reveal` (see `src/styles/global.css`) starts translated down, scaled to 90%
+and blurred, then settles to its resting position, full size and in focus — content arriving out of
+the depth of the shot, like it's moving with the same camera as the background. `src/scripts/reveal.ts`
+drives it two ways:
+
+- **Scroll-triggered** (the default): an `IntersectionObserver` adds `.is-visible` the first time an
+  element crosses into view (`threshold: 0.16`, `rootMargin: '0px 0px -8% 0px'`).
+- **On load** (`data-reveal-trigger="load"`, used by the hero's content): reveals immediately on
+  page load instead of waiting on the observer. Above-the-fold elements near the bottom of the
+  viewport can end up with zero overlap against the observer's shrunk root and never "intersect"
+  until the user scrolls, even though they're already on screen — the hero's copy hit exactly this,
+  which is why it's load-triggered rather than scroll-triggered.
+
+Where a section has several sibling `data-reveal` elements (or repeated ones, like the `Services`
+columns or `UseCases` tiles), each component adds its own `transition-delay` stagger via
+`:nth-child` in its scoped `<style>` block, so they fly in as a short cascade rather than all at
+once. `prefers-reduced-motion` disables all of it — reveals apply `.is-visible`'s end state
+immediately with no transition.
 
 ## SEO
 

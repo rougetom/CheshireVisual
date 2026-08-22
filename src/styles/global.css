@@ -27,6 +27,14 @@ a {
   text-decoration: none;
 }
 
+/* main sits above the fixed video backdrop (z-index 0); the footer needs
+   its own opaque background since the backdrop is fixed behind the whole
+   page, not just the height of main. */
+main {
+  position: relative;
+  z-index: 1;
+}
+
 img,
 video {
   max-width: 100%;
@@ -132,19 +140,24 @@ p {
   }
 }
 
-/* Scroll-reveal base state (JS toggles .is-visible) */
+/* Scroll-reveal base state (JS toggles .is-visible) — content starts
+   smaller, lower and slightly out of focus, then settles into place, as if
+   flying in toward the viewer along with the camera. */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(36px);
+  transform: translateY(56px) scale(0.9);
+  filter: blur(6px);
   transition:
-    opacity 0.9s var(--ease-reveal),
-    transform 0.9s var(--ease-reveal);
-  will-change: opacity, transform;
+    opacity 1s var(--ease-reveal),
+    transform 1s var(--ease-reveal),
+    filter 1s var(--ease-reveal);
+  will-change: opacity, transform, filter;
 }
 
 [data-reveal].is-visible {
   opacity: 1;
   transform: none;
+  filter: blur(0);
 }
 
 .grain-layer {
@@ -165,6 +178,7 @@ p {
   [data-reveal] {
     opacity: 1;
     transform: none;
+    filter: none;
     transition: none;
   }
 

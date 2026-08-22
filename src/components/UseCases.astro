@@ -1,6 +1,4 @@
 ---
-import SectionBackdrop from './SectionBackdrop.astro';
-
 const tiles = [
   {
     name: 'Schools',
@@ -53,15 +51,15 @@ const tiles = [
 ];
 ---
 
-<section id="use-cases" class="use-cases">
-  <SectionBackdrop
-    gradient="radial-gradient(130% 90% at 50% 0%, #1c1c22, #0e0e11 55%, #0a0a0c 85%)"
-    animation="kb"
-    scrim="linear-gradient(180deg, rgba(10,10,11,.85), rgba(10,10,11,.6) 30%, rgba(10,10,11,.94))"
-    videoId="useCasesVideo"
-    grain={false}
-  />
-
+<section
+  id="use-cases"
+  class="use-cases"
+  data-shot
+  data-grade="radial-gradient(130% 90% at 50% 0%, #1c1c22, #0e0e11 55%, #0a0a0c 85%)"
+  data-scrim="linear-gradient(180deg, rgba(10,10,11,.85), rgba(10,10,11,.6) 30%, rgba(10,10,11,.94))"
+  data-anim="kb"
+  data-video="/videos/hero.mp4"
+>
   <div class="inner">
     <div class="head">
       <div data-reveal>
@@ -97,13 +95,12 @@ const tiles = [
 <style>
   .use-cases {
     position: relative;
-    overflow: hidden;
     padding: 130px var(--section-x) 120px;
   }
 
   .inner {
     position: relative;
-    z-index: 10;
+    z-index: 1;
   }
 
   .head {
@@ -113,6 +110,34 @@ const tiles = [
     margin-bottom: 56px;
     gap: 24px;
     flex-wrap: wrap;
+  }
+
+  .head [data-reveal]:nth-child(2) {
+    transition-delay: 0.1s;
+  }
+
+  .grid .tile:nth-child(1) {
+    transition-delay: 0s;
+  }
+
+  .grid .tile:nth-child(2) {
+    transition-delay: 0.08s;
+  }
+
+  .grid .tile:nth-child(3) {
+    transition-delay: 0.16s;
+  }
+
+  .grid .tile:nth-child(4) {
+    transition-delay: 0.24s;
+  }
+
+  .grid .tile:nth-child(5) {
+    transition-delay: 0.32s;
+  }
+
+  .grid .tile:nth-child(6) {
+    transition-delay: 0.4s;
   }
 
   .kicker {

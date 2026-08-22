@@ -1,6 +1,4 @@
 ---
-import SectionBackdrop from './SectionBackdrop.astro';
-
 const services = [
   {
     index: '(01)',
@@ -20,14 +18,15 @@ const services = [
 ];
 ---
 
-<section id="services" class="services">
-  <SectionBackdrop
-    gradient="radial-gradient(120% 90% at 20% 78%, #202028, #121216 52%, #0a0a0c 84%)"
-    animation="kb"
-    scrim="linear-gradient(0deg, rgba(10,10,11,.92), rgba(10,10,11,.72) 60%, rgba(10,10,11,.9))"
-    videoId="servicesVideo"
-  />
-
+<section
+  id="services"
+  class="services"
+  data-shot
+  data-grade="radial-gradient(120% 90% at 20% 78%, #202028, #121216 52%, #0a0a0c 84%)"
+  data-scrim="linear-gradient(0deg, rgba(10,10,11,.92), rgba(10,10,11,.72) 60%, rgba(10,10,11,.9))"
+  data-anim="kb"
+  data-video="/videos/hero.mp4"
+>
   <div class="inner">
     <p class="kicker" data-reveal>02 / Services</p>
     <h2 class="visually-hidden">Drone, aerial and 360° video services</h2>
@@ -49,13 +48,24 @@ const services = [
 <style>
   .services {
     position: relative;
-    overflow: hidden;
     padding: 120px var(--section-x);
   }
 
   .inner {
     position: relative;
-    z-index: 10;
+    z-index: 1;
+  }
+
+  .grid .col:nth-child(1) {
+    transition-delay: 0s;
+  }
+
+  .grid .col:nth-child(2) {
+    transition-delay: 0.1s;
+  }
+
+  .grid .col:nth-child(3) {
+    transition-delay: 0.2s;
   }
 
   .kicker {

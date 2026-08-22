@@ -1,6 +1,4 @@
 ---
-import SectionBackdrop from './SectionBackdrop.astro';
-
 // Placeholder sector wordmarks — swap for real client logos once available.
 // Deliberately generic (not fabricated company names) until you can supply
 // approved logos/case studies.
@@ -14,14 +12,15 @@ const sectors = [
 ];
 ---
 
-<section id="clients" class="clients">
-  <SectionBackdrop
-    gradient="radial-gradient(120% 100% at 50% 100%, #1f1f26, #101014 55%, #0a0a0c 85%)"
-    animation="kb2"
-    scrim="linear-gradient(0deg, rgba(10,10,11,.85), rgba(10,10,11,.75) 60%, rgba(10,10,11,.92))"
-    videoId="clientsVideo"
-  />
-
+<section
+  id="clients"
+  class="clients"
+  data-shot
+  data-grade="radial-gradient(120% 100% at 50% 100%, #1f1f26, #101014 55%, #0a0a0c 85%)"
+  data-scrim="linear-gradient(0deg, rgba(10,10,11,.85), rgba(10,10,11,.75) 60%, rgba(10,10,11,.92))"
+  data-anim="kb2"
+  data-video="/videos/hero.mp4"
+>
   <div class="inner">
     <div class="head" data-reveal>
       <p class="kicker">04 / Clients</p>
@@ -41,13 +40,16 @@ const sectors = [
 <style>
   .clients {
     position: relative;
-    overflow: hidden;
     padding: 120px var(--section-x);
   }
 
   .inner {
     position: relative;
-    z-index: 10;
+    z-index: 1;
+  }
+
+  .inner > [data-reveal]:nth-child(2) {
+    transition-delay: 0.12s;
   }
 
   .kicker {
