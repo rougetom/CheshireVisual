@@ -171,14 +171,13 @@ if (scroller && sceneEls.length) {
       }
     };
 
-    scenes.forEach(({ video }, i) => {
+    scenes.forEach(({ video }) => {
       if (!video) return;
-      if (i === 0) {
-        if (video.readyState >= 1) prime(video);
-        else video.addEventListener('loadedmetadata', () => prime(video), { once: true });
-      } else {
-        video.addEventListener('loadeddata', () => prime(video), { once: true });
-      }
+      video.preload = 'auto';
+      if (video.readyState < 1) video.load();
+      const start = () => prime(video);
+      if (video.readyState >= 1) start();
+      else video.addEventListener('loadedmetadata', start, { once: true });
     });
 
     if (content) {

@@ -1,14 +1,11 @@
 ---
 import { clips, sceneIds, type SceneId } from '@/lib/bunny';
-
-const firstId = sceneIds[0];
 ---
 
 <div class="site-bg" aria-hidden="true">
   {
     sceneIds.map((id: SceneId, i) => {
       const clip = clips[id];
-      const eager = id === firstId;
       return (
         <video
           data-scene-video={id}
@@ -16,7 +13,7 @@ const firstId = sceneIds[0];
           muted
           loop
           playsinline
-          preload={eager ? 'auto' : 'metadata'}
+          preload="auto"
           poster={clip.poster}
           disablepictureinpicture
           style={`z-index:${i}`}
