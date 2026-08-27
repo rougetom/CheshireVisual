@@ -44,7 +44,7 @@ const PLAY_HOLD = 0.03;
 const MIN_RATE = 0.28;
 const MAX_RATE = 3.5;
 // Keep the clip playing at least this long after the last scroll delta.
-const COAST_HOLD = 0.7;
+const COAST_HOLD = 1.2;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -284,25 +284,14 @@ if (scroller && sceneEls.length) {
         const end = Math.max(duration - 0.05, 0);
         s.desired = Math.min(progresses[i] * duration, end);
 
-        // Only snap on real teleports (in-page nav). A hero clip is ~22s, so a
-        // single wheel tick can move >1.5s of video — that is still scrolling.
-        if (Math.abs(progresses[i] - s.lastProgress) > 0.45) {
-          s.lastProgress = progresses[i];
-          s.lastDesired = s.desired;
-          s.display = s.desired;
-          s.vel = 0;
-          s.lastInput = 0;
-          if (!video.paused) video.pause();
-          flushSeek(s);
-          return;
-        }
-        s.lastProgress = progresses[i];
+        if (s.desired > s.lastDesired + 0.001) s.lastInput = performance.now();
+        // Ignore Lenis micro-reversals; only cancel coast on a real rewind.
+        if (s.desired < s.lastDesired - 0.2) s.lastInput = 0;
 
         const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
         s.lastDesired = s.desired;
-        if (targetVel > 0.08) s.lastInput = time;
-        if (targetVel < -0.08) s.lastInput = 0;
-        const tau = Math.abs(targetVel) > 0.05 ? VEL_ATTACK : VEL_RELEASE;
+        s.lastProgress = progresses[i];
+        const tau = Math.abs(targetVel) > 0.15 ? VEL_ATTACK : VEL_RELEASE;
         s.vel += (targetVel - s.vel) * (1 - Math.exp(-dt / tau));
         s.vel = Math.min(MAX_RATE, Math.max(-MAX_RATE, s.vel));
 
@@ -310,7 +299,8 @@ if (scroller && sceneEls.length) {
         const holding = !video.paused || s.playPending;
         const canPlayForward =
           video.currentTime < end - 0.02 && shown > 0.05;
-        const coasting = s.lastInput > 0 && time - s.lastInput < COAST_HOLD * 1000;
+        const now = performance.now();
+        const coasting = s.lastInput > 0 && now - s.lastInput < COAST_HOLD * 1000;
         const shouldPlay =
           canPlayForward &&
           (s.vel > (holding ? PLAY_HOLD : PLAY_START) || coasting);
