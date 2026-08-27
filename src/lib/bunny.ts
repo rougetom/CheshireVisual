@@ -21,7 +21,7 @@ export function bunnyClip(id: string): BunnyClip {
 }
 
 export const clips = {
-  hero: bunnyClip('1222f359-d210-400e-afdc-7f0222e0d18b'),
+  hero: bunnyClip('effdcb21-a91d-49bb-bec4-fcf0b135a141'),
   about: bunnyClip('42d2f657-a408-475d-b5a0-cb5eabf776a7'),
   services: bunnyClip('22069af4-c34e-4451-879e-e7a7738a730d'),
   // No dedicated clip supplied yet — own <video> so the playhead still
