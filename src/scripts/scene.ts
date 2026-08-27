@@ -165,9 +165,15 @@ if (scroller && sceneEls.length) {
     });
 
     const prime = (video: HTMLVideoElement) => {
+      const s = scrubberFor(video);
       const play = video.play();
       if (play) {
-        play.then(() => video.pause()).catch(() => {});
+        play
+          .then(() => {
+            // Don't clobber the rAF loop if it's already driving this clip.
+            if (!s || s.vel <= 0.18) video.pause();
+          })
+          .catch(() => {});
       }
     };
 
@@ -225,7 +231,7 @@ if (scroller && sceneEls.length) {
 
         // Forward: actually play at decaying rate so every frame is shown
         // (seeking only hits keyframes, so a short coast would look frozen).
-        if (s.vel > 0.18 && video.currentTime < end - 0.02) {
+        if (s.vel > 0.18 && video.currentTime < end - 0.02 && Number.parseFloat(video.style.opacity || '0') > 0.05) {
           s.display = video.currentTime;
           video.playbackRate = Math.min(Math.max(s.vel, 0.35), 3.5);
           if (video.paused) video.play().catch(() => {});
