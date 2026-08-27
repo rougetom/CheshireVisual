@@ -23,6 +23,7 @@ interface Scrubber {
   watchdog: number;
   playPending: boolean;
   playGen: number;
+  lastProgress: number;
 }
 
 const LANDING_P = 0.4;
@@ -153,6 +154,7 @@ if (scroller && sceneEls.length) {
               watchdog: 0,
               playPending: false,
               playGen: 0,
+              lastProgress: 0,
             },
           ]
         : [],
@@ -199,9 +201,7 @@ if (scroller && sceneEls.length) {
           .then(() => {
             if (s.playGen !== gen) return;
             s.playPending = false;
-            // A slow play() must not clobber an in-flight coast, but it
-            // should still stop the load-time prime if we never scrolled.
-            if (s.vel <= PLAY_HOLD) video.pause();
+            // rAF owns pause. A late play() resolve must not stop a coast.
           })
           .catch(() => {
             if (s.playGen === gen) s.playPending = false;
@@ -254,6 +254,18 @@ if (scroller && sceneEls.length) {
 
     let lastTs = performance.now();
 
+    if (import.meta.env.DEV) {
+      (window as unknown as { __scrub: () => unknown }).__scrub = () =>
+        scrubbers.map((s) => ({
+          id: s.video.dataset.sceneVideo,
+          time: Number(s.video.currentTime.toFixed(3)),
+          paused: s.video.paused,
+          rate: Number(s.video.playbackRate.toFixed(2)),
+          vel: Number(s.vel.toFixed(2)),
+          desired: Number(s.desired.toFixed(3)),
+        }));
+    }
+
     const tick = (time: number) => {
       const dt = Math.min(0.05, (time - lastTs) / 1000);
       lastTs = time;
@@ -268,7 +280,10 @@ if (scroller && sceneEls.length) {
         const end = Math.max(duration - 0.05, 0);
         s.desired = Math.min(progresses[i] * duration, end);
 
-        if (Math.abs(s.desired - s.lastDesired) > 1.5) {
+        // Only snap on real teleports (in-page nav). A hero clip is ~22s, so a
+        // single wheel tick can move >1.5s of video — that is still scrolling.
+        if (Math.abs(progresses[i] - s.lastProgress) > 0.45) {
+          s.lastProgress = progresses[i];
           s.lastDesired = s.desired;
           s.display = s.desired;
           s.vel = 0;
@@ -276,6 +291,7 @@ if (scroller && sceneEls.length) {
           flushSeek(s);
           return;
         }
+        s.lastProgress = progresses[i];
 
         const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
         s.lastDesired = s.desired;
@@ -293,12 +309,18 @@ if (scroller && sceneEls.length) {
         // Forward: play at the decaying scroll rate so every frame is shown.
         // Seeking only hits ~1s keyframes, which looks like an instant stop.
         if (shouldPlay) {
-          s.display = video.currentTime;
           const lag = s.desired - video.currentTime;
           let rate = Math.min(Math.max(s.vel, MIN_RATE), MAX_RATE);
           if (lag > 0.12) rate = Math.min(Math.max(s.vel + lag * 1.8, MIN_RATE), MAX_RATE);
           video.playbackRate = rate;
           ensurePlay(s);
+          if (!video.paused) {
+            s.display = video.currentTime;
+            return;
+          }
+          // play() not running yet (or blocked): keep the playhead moving.
+          s.display = Math.min(Math.max(video.currentTime + s.vel * dt, 0), end);
+          if (!s.playPending) flushSeek(s);
           return;
         }
 
