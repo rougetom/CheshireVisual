@@ -2,9 +2,8 @@
 // Overlay section sitting on the fixed background video. The page never
 // pans: each scene is a tall wrapper with a sticky 100vh stage, so copy
 // stays pinned while scroll scrubs the (single, full-bleed) video behind
-// it. scene.ts fades copy and the matching clip with how much of the
-// frame this stage covers, so adjacent scenes hand off instead of sitting
-// on black for a full viewport. The video itself never moves or scales.
+// it. scene.ts crossfades adjacent clips with a blur as each sticky
+// stage yields the frame. The video itself never moves or scales.
 interface Props {
   id: string;
 }
