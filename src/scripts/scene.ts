@@ -1,38 +1,54 @@
-// Drives the page: one fixed background video, scrubbed from overall
-// scroll, plus per-scene content fades. The video never scales or
-// moves — it fills the frame behind everything. Each scene's local
-// progress p (0 at the top of its own sticky range, 1 at the bottom)
-// only fades that scene's copy in and out so sections don't stack.
-//
-// HLS / the Bunny iframe player are the wrong tools here: iframe
-// seeks go through async postMessage, and HLS is segmented so every
-// currentTime jump refetches a fragment. Native progressive MP4 with
-// byte ranges is what we attach in BackgroundVideo.astro; this file
-// just maps scroll → currentTime, coalesced on the seeked event so
-// we never stack seeks faster than the decoder can keep up.
+// Per-scene full-bleed clips, each scrubbed from that scene's own scroll
+// range. The playhead is tied to scroll but eased (and Lenis coasts the
+// scroller) so lifting off the wheel doesn't freeze the frame.
+
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 
 interface SceneRefs {
   el: HTMLElement;
   inner: HTMLElement;
+  video: HTMLVideoElement | null;
+}
+
+interface Scrubber {
+  video: HTMLVideoElement;
+  desired: number;
+  display: number;
+  seeking: boolean;
+  watchdog: number;
 }
 
 const ENTER = 0.14;
 const EXIT = 0.86;
+const LANDING_P = 0.4;
+// Seconds to cover ~63% of the remaining playhead error. Higher = more
+// coast after the wheel stops; still pulled toward the scroll mapping.
+const PLAYHEAD_TAU = 0.28;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 const scroller = document.getElementById('siteScroll');
+const content = document.getElementById('siteScrollInner');
 const sceneEls = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]'));
-const video = document.querySelector<HTMLVideoElement>('[data-bg-video]');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// In-page nav links (`href="#id"`) target a scene's id, but a scene's own
-// top (p=0) is where it's still transparent for every scene except the
-// first — the browser's native fragment jump would land the user on empty
-// copy. Intercept these and land partway into the scene's range instead.
-if (scroller) {
-  const LANDING_P = 0.4;
+const scenes: SceneRefs[] = sceneEls.map((el) => ({
+  el,
+  inner: el.querySelector<HTMLElement>('.stage-inner')!,
+  video: document.querySelector<HTMLVideoElement>(`[data-scene-video="${el.id}"]`),
+}));
 
+const offsetInScroller = (target: HTMLElement) => {
+  if (!scroller) return 0;
+  const sRect = scroller.getBoundingClientRect();
+  const tRect = target.getBoundingClientRect();
+  return scroller.scrollTop + (tRect.top - sRect.top);
+};
+
+let lenis: Lenis | null = null;
+
+if (scroller) {
   document.addEventListener('click', (event) => {
     const link = (event.target as HTMLElement)?.closest('a[href^="#"]');
     if (!link) return;
@@ -44,27 +60,27 @@ if (scroller) {
     event.preventDefault();
     const isFirst = sceneEls[0] === target;
     const range = target.offsetHeight - scroller.clientHeight;
-    const top = isFirst ? 0 : target.offsetTop + LANDING_P * Math.max(range, 0);
-    scroller.scrollTo({ top, behavior: reduceMotion ? 'instant' : 'smooth' });
+    const top = isFirst ? 0 : offsetInScroller(target) + LANDING_P * Math.max(range, 0);
+
+    if (lenis && !reduceMotion) {
+      lenis.scrollTo(top, { duration: 1.15 });
+    } else {
+      scroller.scrollTo({ top, behavior: reduceMotion ? 'instant' : 'smooth' });
+    }
   });
 }
 
 if (scroller && sceneEls.length) {
-  const scenes: SceneRefs[] = sceneEls.map((el) => ({
-    el,
-    inner: el.querySelector<HTMLElement>('.stage-inner')!,
-  }));
-
   const fadeScenes = () => {
     const viewportH = scroller.clientHeight;
+    const progresses: number[] = [];
 
-    scenes.forEach(({ el, inner }, i) => {
+    scenes.forEach(({ el, inner, video }, i) => {
       const rect = el.getBoundingClientRect();
       const total = el.offsetHeight - viewportH;
       const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
+      progresses.push(p);
 
-      // The first scene is what the page loads on — fully visible at p=0.
-      // Later scenes fade up as they cover the one before.
       let opacity: number;
       if (i === 0) {
         opacity = p > EXIT ? 1 - ease((p - EXIT) / (1 - EXIT)) : 1;
@@ -77,91 +93,123 @@ if (scroller && sceneEls.length) {
       }
 
       inner.style.opacity = String(opacity);
+      if (video) video.style.opacity = String(opacity);
+
+      // Start fetching the next clip before it covers this one.
+      if (p > 0.55) {
+        const next = scenes[i + 1]?.video;
+        if (next && next.preload !== 'auto') {
+          next.preload = 'auto';
+        }
+      }
     });
+
+    return progresses;
   };
 
   if (reduceMotion) {
-    video?.play().catch(() => {});
-    scenes.forEach(({ inner }) => {
+    scenes.forEach(({ inner, video }) => {
       inner.style.opacity = '1';
+      if (video) {
+        video.style.opacity = '1';
+        video.play().catch(() => {});
+      }
     });
   } else {
-    let ticking = false;
-    let seeking = false;
-    let desiredTime = 0;
-    let seekWatchdog = 0;
+    const scrubbers: Scrubber[] = scenes.flatMap(({ video }) =>
+      video
+        ? [
+            {
+              video,
+              desired: 0,
+              display: 0,
+              seeking: false,
+              watchdog: 0,
+            },
+          ]
+        : [],
+    );
 
-    const flushSeek = () => {
-      if (!video || !video.duration) return;
-      const next = Math.min(Math.max(desiredTime, 0), Math.max(video.duration - 0.05, 0));
-      if (Math.abs(video.currentTime - next) < 0.04) {
-        seeking = false;
+    const scrubberFor = (video: HTMLVideoElement | null) =>
+      video ? scrubbers.find((s) => s.video === video) : undefined;
+
+    const flushSeek = (s: Scrubber) => {
+      const { video } = s;
+      if (!video.duration) return;
+      const next = Math.min(Math.max(s.display, 0), Math.max(video.duration - 0.05, 0));
+      if (Math.abs(video.currentTime - next) < 0.03) {
+        s.seeking = false;
         return;
       }
-      if (seeking) return;
-      seeking = true;
+      if (s.seeking) return;
+      s.seeking = true;
       video.currentTime = next;
-      window.clearTimeout(seekWatchdog);
-      // Some browsers cancel an in-flight seek without firing `seeked`
-      // (especially on large jumps). Unstick so we can chase desiredTime.
-      seekWatchdog = window.setTimeout(() => {
-        seeking = false;
-        flushSeek();
+      window.clearTimeout(s.watchdog);
+      s.watchdog = window.setTimeout(() => {
+        s.seeking = false;
+        flushSeek(s);
       }, 160);
     };
 
-    video?.addEventListener('seeked', () => {
-      seeking = false;
-      window.clearTimeout(seekWatchdog);
-      flushSeek();
+    scrubbers.forEach((s) => {
+      s.video.addEventListener('seeked', () => {
+        s.seeking = false;
+        window.clearTimeout(s.watchdog);
+        flushSeek(s);
+      });
     });
 
-    const scrubVideo = () => {
-      if (!video || !video.duration) return;
-      const max = scroller.scrollHeight - scroller.clientHeight;
-      const p = Math.min(1, Math.max(0, scroller.scrollTop / Math.max(max, 1)));
-      desiredTime = p * video.duration;
-      flushSeek();
-    };
-
-    const update = () => {
-      ticking = false;
-      fadeScenes();
-      scrubVideo();
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
-
-    // Unlock seeking on iOS: a muted play/pause primes the element so
-    // subsequent currentTime writes actually paint a frame.
-    const prime = () => {
-      if (!video) return;
+    const prime = (video: HTMLVideoElement) => {
       const play = video.play();
       if (play) {
-        play
-          .then(() => {
-            video.pause();
-            update();
-          })
-          .catch(() => update());
-      } else {
-        update();
+        play.then(() => video.pause()).catch(() => {});
       }
     };
 
-    if (video) {
-      if (video.readyState >= 1) prime();
-      else video.addEventListener('loadedmetadata', prime, { once: true });
+    scenes.forEach(({ video }, i) => {
+      if (!video) return;
+      if (i === 0) {
+        if (video.readyState >= 1) prime(video);
+        else video.addEventListener('loadedmetadata', () => prime(video), { once: true });
+      } else {
+        video.addEventListener('loadeddata', () => prime(video), { once: true });
+      }
+    });
+
+    if (content) {
+      lenis = new Lenis({
+        wrapper: scroller,
+        content,
+        eventsTarget: scroller,
+        autoRaf: false,
+        lerp: 0.075,
+        wheelMultiplier: 0.9,
+        touchMultiplier: 1.15,
+        smoothWheel: true,
+      });
     }
 
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    scroller.addEventListener('scrollend', update);
-    window.addEventListener('resize', onScroll);
-    update();
+    let lastTs = performance.now();
+
+    const tick = (time: number) => {
+      const dt = Math.min(0.05, (time - lastTs) / 1000);
+      lastTs = time;
+      lenis?.raf(time);
+
+      const progresses = fadeScenes();
+      const k = 1 - Math.exp(-dt / PLAYHEAD_TAU);
+
+      scenes.forEach(({ video }, i) => {
+        const s = scrubberFor(video);
+        if (!s || !video?.duration) return;
+        s.desired = progresses[i] * video.duration;
+        s.display += (s.desired - s.display) * k;
+        flushSeek(s);
+      });
+
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
   }
 }
