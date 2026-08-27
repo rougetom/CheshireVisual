@@ -1,21 +1,32 @@
 ---
-import { bunnyMp4 } from '@/lib/bunny';
+import { clips, sceneIds, type SceneId } from '@/lib/bunny';
+
+const firstId = sceneIds[0];
 ---
 
 <div class="site-bg" aria-hidden="true">
-  <video
-    data-bg-video
-    class="footage"
-    muted
-    loop
-    playsinline
-    preload="auto"
-    poster={bunnyMp4.poster}
-    disablepictureinpicture
-  >
-    <source src={bunnyMp4.p1080} type="video/mp4" media="(min-width: 900px)" />
-    <source src={bunnyMp4.p720} type="video/mp4" />
-  </video>
+  {
+    sceneIds.map((id: SceneId, i) => {
+      const clip = clips[id];
+      const eager = id === firstId;
+      return (
+        <video
+          data-scene-video={id}
+          class="footage"
+          muted
+          loop
+          playsinline
+          preload={eager ? 'auto' : 'metadata'}
+          poster={clip.poster}
+          disablepictureinpicture
+          style={`z-index:${i}`}
+        >
+          <source src={clip.p1080} type="video/mp4" media="(min-width: 900px)" />
+          <source src={clip.p720} type="video/mp4" />
+        </video>
+      );
+    })
+  }
   <div class="scrim"></div>
 </div>
 
@@ -36,11 +47,17 @@ import { bunnyMp4 } from '@/lib/bunny';
     height: 100%;
     max-width: none;
     object-fit: cover;
+    opacity: 0;
+  }
+
+  .footage:first-of-type {
+    opacity: 1;
   }
 
   .scrim {
     position: absolute;
     inset: 0;
+    z-index: 20;
     background: linear-gradient(
       180deg,
       rgba(0, 0, 0, 0.6) 0%,

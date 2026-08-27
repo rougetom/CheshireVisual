@@ -4,17 +4,20 @@ Marketing site for [cheshirevisual.co.uk](https://cheshirevisual.co.uk) — a dr
 photography/video studio based in Cheshire, serving the North West of England.
 
 Built with [Astro](https://astro.build) for fast, SEO-first static output. Plain black-and-white UI
-chrome (white outer margin, black frame border, white nav text) around full-colour video. One
-full-bleed background clip stays pinned in the frame; scroll scrubs it and fades section copy over
-the top. The video never scales or moves.
+chrome (white outer margin, black frame border, white nav text) around full-colour video. Each
+section has its own full-bleed clip, pinned in the frame — scroll scrubs that scene's playhead
+(with inertia so the frame doesn't freeze when you lift off the wheel) and fades copy over the top.
+The video never scales or moves.
 
 ## Stack
 
 - **Astro** — static-first rendering, minimal client JS, great Core Web Vitals out of the box.
 - **@fontsource** — self-hosted Space Grotesk + Instrument Serif (no third-party font requests).
 - **@astrojs/sitemap** — automatic `sitemap-index.xml` at build time.
-- **Bunny Stream MP4** — one native `<video>` playing a progressive H.264 file from the Stream
+- **Bunny Stream MP4** — native `<video>` elements playing progressive H.264 files from the Stream
   pull zone (not HLS, not the iframe embed). See below for why.
+- **Lenis** — inertial smooth scroll on the inner frame scroller, so the playhead coasts instead of
+  stopping dead when the wheel does.
 
 ## Getting started
 
@@ -30,7 +33,7 @@ npm run preview    # serve the production build locally
 ```
 src/
   components/    Section components (Header, Hero, About, Services, UseCases, Clients, Contact, Footer)
-                 BackgroundVideo.astro — the single fixed full-bleed clip
+                 BackgroundVideo.astro — stacked full-bleed clips (one per scene)
                  VideoScene.astro — sticky copy overlay for each section
   layouts/       Layout.astro — <head>, SEO, and the site's fixed frame/scroll shell
   lib/           bunny.ts — Stream pull-zone URLs (MP4 + poster)
@@ -61,19 +64,23 @@ escaping it.
 
 ## Background video + scroll scrubbing
 
-There is **one** `<video>` for the whole page, rendered by `BackgroundVideo.astro` as an absolutely
-positioned layer inside `.site-frame` (behind `.site-scroll`). It is `object-fit: cover`, fills the
-rounded frame, and never changes size. `scene.ts` maps overall scroll progress to
-`video.currentTime`, coalesced on the `seeked` event so we don't stack seeks faster than the
-decoder can finish.
+Each section has its own `<video>` in `BackgroundVideo.astro`, stacked and faded by `scene.ts`.
+Clips stay `object-fit: cover` in the frame and never change size. A scene's local progress `p`
+(0→1 through that scene's sticky range) maps to `currentTime = p * duration` for **that** clip
+only — entering About starts its video at 0 rather than continuing the hero.
+
+The playhead eases toward the scroll mapping (`PLAYHEAD_TAU`) and Lenis coasts the scroller, so
+lifting off the wheel doesn't freeze the frame. Seeks are still coalesced on `seeked`.
 
 Every top-level section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) is a
 `VideoScene.astro`: a tall (`200vh`) wrapper containing a `position: sticky; top: 0; height: 100vh`
-stage for the copy, so text stays pinned while the background clip scrubs. `scene.ts` fades each
-scene's copy in over the first 14% of its local progress `p` and out over the last 14% so sections
-don't stack. The first scene skips the entrance fade — it's what the page loads on.
+stage for the copy. `scene.ts` fades each scene's copy (and its clip) in over the first 14% of `p`
+and out over the last 14%. The first scene skips the entrance fade.
 
-Under `prefers-reduced-motion`, scrubbing is skipped and the video just autoplays/loops.
+Clip ids live in `src/lib/bunny.ts`. Use cases currently reuses the hero file until a dedicated
+clip is supplied; it is still a separate `<video>` so the playhead restarts with that section.
+
+Under `prefers-reduced-motion`, scrubbing is skipped and each video autoplays/loops.
 
 `scene.ts` also intercepts in-page `<a href="#id">` clicks: a scene's own top (`p=0`) is where copy
 is still faded out for every scene except the hero, so a plain fragment-jump would look empty.
@@ -89,12 +96,12 @@ Bunny Stream exposes three ways to play a clip ([storage structure](https://bunn
 | HLS playlist | `{zone}/{id}/playlist.m3u8` | **No.** Segmented + ABR: every `currentTime` jump may fetch a new fragment. Needs `hls.js` outside Safari. Fine for normal playback, poor for scrubbing. |
 | **MP4 fallback** | `{zone}/{id}/play_{720p\|1080p}.mp4` | **Yes.** Progressive H.264, `Accept-Ranges: bytes`, `moov` at the front. Native `<video>` in every browser, no extra library. Enable **MP4 Fallback** on the Stream library (before upload) so these files exist. |
 
-URLs live in `src/lib/bunny.ts`. The element picks 1080p above 900px and 720p otherwise, with
+URLs live in `src/lib/bunny.ts`. Each clip picks 1080p above 900px and 720p otherwise, with
 `thumbnail_1.jpg` as the poster. The pull zone currently **blocks empty Referer** — browser
 requests are fine; bare `curl` without a `Referer` header gets 403.
 
-Swap the clip later by changing the video id in `bunny.ts` (and confirming MP4 fallback was
-enabled when that video was encoded).
+Swap a section's footage by changing that scene's video id in `bunny.ts` (MP4 fallback must have
+been enabled when the video was encoded).
 
 ## Header
 
