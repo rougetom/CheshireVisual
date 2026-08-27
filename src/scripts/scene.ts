@@ -88,36 +88,40 @@ if (scroller && sceneEls.length) {
   } else {
     let ticking = false;
     let seeking = false;
-    let pendingTime: number | null = null;
+    let desiredTime = 0;
+    let seekWatchdog = 0;
 
-    const applySeek = (time: number) => {
+    const flushSeek = () => {
       if (!video || !video.duration) return;
-      const next = Math.min(Math.max(time, 0), Math.max(video.duration - 0.04, 0));
-      if (Math.abs(video.currentTime - next) < 0.03) return;
-
-      if (seeking) {
-        pendingTime = next;
+      const next = Math.min(Math.max(desiredTime, 0), Math.max(video.duration - 0.05, 0));
+      if (Math.abs(video.currentTime - next) < 0.04) {
+        seeking = false;
         return;
       }
-
+      if (seeking) return;
       seeking = true;
       video.currentTime = next;
+      window.clearTimeout(seekWatchdog);
+      // Some browsers cancel an in-flight seek without firing `seeked`
+      // (especially on large jumps). Unstick so we can chase desiredTime.
+      seekWatchdog = window.setTimeout(() => {
+        seeking = false;
+        flushSeek();
+      }, 160);
     };
 
     video?.addEventListener('seeked', () => {
       seeking = false;
-      if (pendingTime !== null) {
-        const time = pendingTime;
-        pendingTime = null;
-        applySeek(time);
-      }
+      window.clearTimeout(seekWatchdog);
+      flushSeek();
     });
 
     const scrubVideo = () => {
       if (!video || !video.duration) return;
       const max = scroller.scrollHeight - scroller.clientHeight;
       const p = Math.min(1, Math.max(0, scroller.scrollTop / Math.max(max, 1)));
-      applySeek(p * video.duration);
+      desiredTime = p * video.duration;
+      flushSeek();
     };
 
     const update = () => {
@@ -156,6 +160,7 @@ if (scroller && sceneEls.length) {
     }
 
     scroller.addEventListener('scroll', onScroll, { passive: true });
+    scroller.addEventListener('scrollend', update);
     window.addEventListener('resize', onScroll);
     update();
   }
