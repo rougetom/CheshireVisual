@@ -1,0 +1,52 @@
+---
+import { bunnyMp4 } from '@/lib/bunny';
+---
+
+<div class="site-bg" aria-hidden="true">
+  <video
+    data-bg-video
+    class="footage"
+    muted
+    loop
+    playsinline
+    preload="auto"
+    poster={bunnyMp4.poster}
+    disablepictureinpicture
+  >
+    <source src={bunnyMp4.p1080} type="video/mp4" media="(min-width: 900px)" />
+    <source src={bunnyMp4.p720} type="video/mp4" />
+  </video>
+  <div class="scrim"></div>
+</div>
+
+<style>
+  .site-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: #000;
+    pointer-events: none;
+  }
+
+  .footage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0.08) 32%,
+      rgba(0, 0, 0, 0.05) 60%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
+  }
+</style>

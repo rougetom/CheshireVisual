@@ -1,5 +1,6 @@
 ---
 import Seo from '@/components/Seo.astro';
+import BackgroundVideo from '@/components/BackgroundVideo.astro';
 import '@/styles/global.css';
 
 interface Props {
@@ -20,6 +21,7 @@ const { title, description, path = '/' } = Astro.props;
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="site-frame">
+      <BackgroundVideo />
       <div class="site-scroll" id="siteScroll">
         <slot />
       </div>
@@ -34,7 +36,7 @@ const { title, description, path = '/' } = Astro.props;
     border: 1.5px solid var(--color-text);
     border-radius: 24px;
     overflow: hidden;
-    background: var(--color-bg);
+    background: #000;
     /* Any transform makes this the containing block for position:fixed
        descendants (e.g. the mobile nav overlay) — without it, "fixed"
        children would ignore the frame entirely and cover the raw
@@ -43,11 +45,13 @@ const { title, description, path = '/' } = Astro.props;
   }
 
   .site-scroll {
+    position: relative;
+    z-index: 1;
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
-    background: #000;
+    background: transparent;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.6) transparent;
