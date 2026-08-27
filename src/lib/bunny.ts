@@ -11,17 +11,17 @@ export interface BunnyClip {
   p1080: string;
 }
 
-export function bunnyClip(id: string): BunnyClip {
+export function bunnyClip(id: string, poster?: string): BunnyClip {
   return {
     id,
-    poster: `${ZONE}/${id}/thumbnail_1.jpg`,
+    poster: poster ?? `${ZONE}/${id}/thumbnail_1.jpg`,
     p720: `${ZONE}/${id}/play_720p.mp4`,
     p1080: `${ZONE}/${id}/play_1080p.mp4`,
   };
 }
 
 export const clips = {
-  hero: bunnyClip('effdcb21-a91d-49bb-bec4-fcf0b135a141'),
+  hero: bunnyClip('effdcb21-a91d-49bb-bec4-fcf0b135a141', '/hero-lqip.jpg'),
   about: bunnyClip('42d2f657-a408-475d-b5a0-cb5eabf776a7'),
   services: bunnyClip('22069af4-c34e-4451-879e-e7a7738a730d'),
   // No dedicated clip supplied yet — own <video> so the playhead still
