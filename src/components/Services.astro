@@ -3,32 +3,27 @@ import VideoScene from './VideoScene.astro';
 
 const services = [
   {
-    index: '(01)',
     title: 'Aerial film & photography',
     body: 'Cinematic drone cinematography and stills in up to 8K, graded to match your brand.',
   },
   {
-    index: '(02)',
     title: '360° & virtual tours',
     body: 'Immersive 360° capture and walkthroughs, embeddable directly on your website.',
   },
   {
-    index: '(03)',
-    title: 'Ground filming & post',
-    body: 'Motion graphics, colour grading and sound design, ready to publish anywhere.',
+    title: 'Post Production',
+    body: 'We edit, colour grade and publish your footage.',
   },
 ];
 ---
 
 <VideoScene id="services">
-  <p class="kicker">02 / Services</p>
-  <h2 class="visually-hidden">Drone, aerial and 360° video services</h2>
+  <h2>Services</h2>
 
   <div class="grid">
     {
       services.map((service) => (
         <div class="col">
-          <div class="index">{service.index}</div>
           <h3>{service.title}</h3>
           <p>{service.body}</p>
         </div>
@@ -38,12 +33,12 @@ const services = [
 </VideoScene>
 
 <style>
-  .kicker {
-    font-size: 12px;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.72);
-    margin-bottom: 32px;
+  h2 {
+    font-weight: 800;
+    font-size: clamp(30px, 3.6vw, 48px);
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 28px;
   }
 
   .grid {
@@ -65,13 +60,6 @@ const services = [
 
   .col:not(:first-child) {
     padding-left: 40px;
-  }
-
-  .index {
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 14px;
   }
 
   h3 {

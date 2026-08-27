@@ -21,8 +21,10 @@ interface Scrubber {
 }
 
 const LANDING_P = 0.4;
-// Dissolve the clip over this much of the frame as the next stage slides in.
-const VIDEO_FADE = 0.08;
+// Crossfade window as a fraction of the frame. Wide enough that both clips
+// overlap, short enough that we don't sit on a long mix.
+const CROSSFADE = 0.6;
+const MAX_BLUR = 20;
 // Copy holds until this scene starts to yield the frame.
 const COPY_HOLD = 0.88;
 const COPY_FADE = 0.1;
@@ -92,8 +94,9 @@ if (scroller && sceneEls.length) {
         Math.min(stageRect.bottom, viewRect.bottom) - Math.max(stageRect.top, viewRect.top);
       const coverage = Math.min(1, Math.max(0, visible / Math.max(viewportH, 1)));
 
-      const videoOpacity =
-        coverage <= 0 ? 0 : coverage >= VIDEO_FADE ? 1 : ease(coverage / VIDEO_FADE);
+      const t = coverage <= 0 ? 0 : coverage >= CROSSFADE ? 1 : ease(coverage / CROSSFADE);
+      const videoOpacity = t;
+      const blur = (1 - t) * MAX_BLUR;
 
       let copyOpacity: number;
       if (coverage >= COPY_HOLD) {
@@ -105,7 +108,10 @@ if (scroller && sceneEls.length) {
       }
 
       inner.style.opacity = String(copyOpacity);
-      if (video) video.style.opacity = String(videoOpacity);
+      if (video) {
+        video.style.opacity = String(videoOpacity);
+        video.style.filter = t <= 0 || t >= 1 ? 'none' : `blur(${blur.toFixed(2)}px)`;
+      }
 
       // Start fetching the next clip before it covers this one.
       if (p > 0.55) {
@@ -124,6 +130,7 @@ if (scroller && sceneEls.length) {
       inner.style.opacity = '1';
       if (video) {
         video.style.opacity = '1';
+        video.style.filter = 'none';
         video.play().catch(() => {});
       }
     });

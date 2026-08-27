@@ -2,8 +2,8 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
-@import '@fontsource/inter-tight/600.css';
 @import '@fontsource/inter-tight/700.css';
+@import '@fontsource/inter-tight/800.css';
 @import './tokens.css';
 
 * {
@@ -51,6 +51,7 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
+  font-weight: 800;
 }
 
 .visually-hidden {
