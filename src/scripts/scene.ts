@@ -206,23 +206,38 @@ if (scroller && sceneEls.length) {
         const s = scrubberFor(video);
         if (!s || !video?.duration) return;
         const duration = video.duration;
-        s.desired = progresses[i] * duration;
+        const end = Math.max(duration - 0.05, 0);
+        s.desired = Math.min(progresses[i] * duration, end);
+
         if (Math.abs(s.desired - s.lastDesired) > 1.5) {
           s.lastDesired = s.desired;
           s.display = s.desired;
           s.vel = 0;
+          if (!video.paused) video.pause();
           flushSeek(s);
           return;
         }
+
         const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
         s.lastDesired = s.desired;
-        const vk = 1 - Math.exp(-dt / VEL_TAU);
-        const pk = 1 - Math.exp(-dt / POS_TAU);
-        s.vel += (targetVel - s.vel) * vk;
-        s.vel = Math.min(8, Math.max(-8, s.vel));
-        s.display += s.vel * dt;
-        s.display += (s.desired - s.display) * pk;
-        s.display = Math.min(Math.max(s.display, 0), Math.max(duration - 0.05, 0));
+        s.vel += (targetVel - s.vel) * (1 - Math.exp(-dt / VEL_TAU));
+        s.vel = Math.min(4, Math.max(-4, s.vel));
+
+        // Forward: actually play at decaying rate so every frame is shown
+        // (seeking only hits keyframes, so a short coast would look frozen).
+        if (s.vel > 0.18 && video.currentTime < end - 0.02) {
+          s.display = video.currentTime;
+          video.playbackRate = Math.min(Math.max(s.vel, 0.35), 3.5);
+          if (video.paused) video.play().catch(() => {});
+          return;
+        }
+
+        if (!video.paused) {
+          video.pause();
+          s.display = video.currentTime;
+        }
+        s.display += (s.desired - s.display) * (1 - Math.exp(-dt / POS_TAU));
+        s.display = Math.min(Math.max(s.display, 0), end);
         flushSeek(s);
       });
 
