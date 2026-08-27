@@ -36,6 +36,7 @@ src/
   lib/           bunny.ts — Stream pull-zone URLs (MP4 + poster)
   scripts/       scene.ts — content fade, scroll-scrub, in-page nav
   styles/        tokens.css (design tokens), global.css
+wrangler.jsonc   Cloudflare Workers static-assets config (dist/, no SSR adapter)
 ```
 
 ## The frame shell

@@ -1,0 +1,12 @@
+{
+  // Static Astro site — no Worker entrypoint, no @astrojs/cloudflare adapter.
+  // Without this file, Wrangler auto-detects Astro as SSR and looks for
+  // dist/_worker.js/index.js, which does not exist, so Workers Builds
+  // preview deploys (non-main branches) fail.
+  "name": "cheshirevisual",
+  "compatibility_date": "2026-08-27",
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist"
+  }
+}
