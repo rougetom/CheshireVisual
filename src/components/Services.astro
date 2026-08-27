@@ -1,0 +1,103 @@
+---
+import VideoScene from './VideoScene.astro';
+
+const services = [
+  {
+    index: '(01)',
+    title: 'Aerial film & photography',
+    body: 'Cinematic drone cinematography and stills in up to 8K, graded to match your brand.',
+  },
+  {
+    index: '(02)',
+    title: '360° & virtual tours',
+    body: 'Immersive 360° capture and walkthroughs, embeddable directly on your website.',
+  },
+  {
+    index: '(03)',
+    title: 'Ground filming & post',
+    body: 'Motion graphics, colour grading and sound design, ready to publish anywhere.',
+  },
+];
+---
+
+<VideoScene id="services" video="https://vz-fa5f7bf1-41c.b-cdn.net/1222f359-d210-400e-afdc-7f0222e0d18b/playlist.m3u8">
+  <p class="kicker">02 / Services</p>
+  <h2 class="visually-hidden">Drone, aerial and 360° video services</h2>
+
+  <div class="grid">
+    {
+      services.map((service) => (
+        <div class="col">
+          <div class="index">{service.index}</div>
+          <h3>{service.title}</h3>
+          <p>{service.body}</p>
+        </div>
+      ))
+    }
+  </div>
+</VideoScene>
+
+<style>
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 32px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .col {
+    padding: 28px 40px 0 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .col:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .col:not(:first-child) {
+    padding-left: 40px;
+  }
+
+  .index {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 14px;
+  }
+
+  h3 {
+    font-weight: 700;
+    font-size: clamp(19px, 1.8vw, 24px);
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .col p {
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: 1fr;
+      border-top: none;
+      gap: 18px;
+    }
+
+    .col {
+      border-right: none;
+      padding: 0 !important;
+    }
+  }
+</style>

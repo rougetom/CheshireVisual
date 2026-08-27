@@ -1,0 +1,93 @@
+---
+// Shared full-bleed video "scene" — every top-level section is one of
+// these. The page never pans vertically: scroll instead drives a single
+// scene's local progress (0→1, computed by scene.ts from how far you've
+// scrolled through this scene's own tall wrapper), which fades the scene
+// in, grows it slightly (the "z axis" flythrough feel) and scrubs its
+// video in lock-step. A later scene's opaque stage naturally covers the
+// previous one once it starts sticking, which is what produces the
+// fade-through-black transition between scenes — no separate crossfade
+// element needed.
+//
+// `video` is an HLS manifest URL (Bunny Stream), not a plain file — there's
+// no native <source type="application/x-mpegURL">, since most browsers
+// can't parse that. It's exposed as data-hls-src instead; src/scripts/hls.ts
+// attaches it (natively on Safari, via hls.js everywhere else) before
+// scene.ts's scroll-scrub logic ever touches the element.
+interface Props {
+  id: string;
+  video: string;
+  scrim?: string;
+}
+
+const {
+  id,
+  video,
+  scrim = 'linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,.08) 32%, rgba(0,0,0,.05) 60%, rgba(0,0,0,.72) 100%)',
+} = Astro.props;
+---
+
+<section id={id} class="scene" data-scene>
+  <div class="stage">
+    <div class="stage-inner">
+      <video class="footage" muted loop playsinline preload="auto" data-hls-src={video}></video>
+      <div class="scrim" style={`background:${scrim}`}></div>
+      <div class="content">
+        <slot />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .scene {
+    position: relative;
+    height: 200vh;
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .stage-inner {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 50%;
+    will-change: transform, opacity;
+  }
+
+  .footage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 96px var(--section-x) 72px;
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-inner {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>

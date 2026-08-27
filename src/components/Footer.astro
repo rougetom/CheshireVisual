@@ -1,0 +1,58 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="wordmark">Cheshire Visual</div>
+  <nav aria-label="Footer">
+    <a href="#about">About</a>
+    <a href="#services">Services</a>
+    <a href="#use-cases">Use cases</a>
+    <a href="#clients">Clients</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  <p class="legal">&copy; {year} Cheshire Visual · CAA licensed &amp; insured</p>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    background: #000;
+    color: #fff;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 44px var(--section-x);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  nav {
+    display: flex;
+    gap: 30px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    flex-wrap: wrap;
+  }
+
+  nav a:hover,
+  nav a:focus-visible {
+    color: #fff;
+  }
+
+  .legal {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+import VideoScene from './VideoScene.astro';
+---
+
+<VideoScene id="about" video="https://vz-fa5f7bf1-41c.b-cdn.net/1222f359-d210-400e-afdc-7f0222e0d18b/playlist.m3u8">
+  <div class="inner">
+    <div class="heading">
+      <p class="kicker">01 / About Cheshire Visual</p>
+      <h2>Drone &amp; 360&deg; video,<br />done to a standard.</h2>
+    </div>
+
+    <div class="copy">
+      <p>
+        CAA-licensed drone, aerial and 360&deg; photography and video production, filming across
+        Cheshire and the North West &mdash; Chester, Manchester, Liverpool, Warrington and beyond.
+        Every flight is planned and insured; every edit delivered ready to publish.
+      </p>
+      <ul class="stats">
+        <li><span>CAA</span>Licensed remote pilot</li>
+        <li><span>4K&nbsp;/&nbsp;8K</span>Aerial &amp; 360&deg; capture</li>
+        <li><span>North West</span>Cheshire-based, flying region-wide</li>
+      </ul>
+    </div>
+  </div>
+</VideoScene>
+
+<style>
+  .inner {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 64px;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    font-weight: 700;
+    font-size: clamp(30px, 3.6vw, 48px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .copy p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.78);
+    max-width: 560px;
+  }
+
+  .stats {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 20px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+  }
+
+  .stats li {
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stats span {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 22px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #fff;
+  }
+
+  @media (max-width: 900px) {
+    .inner {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+</style>

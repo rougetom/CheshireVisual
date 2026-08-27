@@ -1,0 +1,121 @@
+---
+import VideoScene from './VideoScene.astro';
+
+const tiles = [
+  { name: 'Schools', tag: 'Aerial', desc: 'Prospectus films & open-day aerial tours' },
+  { name: 'Sports clubs', tag: 'Film', desc: 'Matchday highlights & facility showcases' },
+  { name: 'Construction', tag: '4K', desc: 'Progress surveys & site documentation' },
+  { name: 'Colleges', tag: '360°', desc: 'Campus 360° tours & recruitment content' },
+  { name: 'Venues', tag: '360°', desc: 'Event spaces from every angle' },
+  { name: 'Property', tag: 'Film', desc: 'Listings & developments, cinematic and 360°' },
+];
+---
+
+<VideoScene id="use-cases" video="https://vz-fa5f7bf1-41c.b-cdn.net/1222f359-d210-400e-afdc-7f0222e0d18b/playlist.m3u8">
+  <div class="head">
+    <div>
+      <p class="kicker">03 / Who we fly for</p>
+      <h2>Made for every brief.</h2>
+    </div>
+    <a href="#contact" class="brief-link">Discuss your brief →</a>
+  </div>
+
+  <div class="grid">
+    {
+      tiles.map((tile) => (
+        <div class="tile">
+          <span class="tag">{tile.tag}</span>
+          <h3>{tile.name}</h3>
+          <p>{tile.desc}</p>
+        </div>
+      ))
+    }
+  </div>
+</VideoScene>
+
+<style>
+  .head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-weight: 700;
+    font-size: clamp(28px, 3.6vw, 44px);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .brief-link {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    padding-bottom: 6px;
+    white-space: nowrap;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(255, 255, 255, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .tile {
+    position: relative;
+    padding: 16px 18px;
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  .tag {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .tile h3 {
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: #fff;
+    margin: 0 60px 6px 0;
+  }
+
+  .tile p {
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

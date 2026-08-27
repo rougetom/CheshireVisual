@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cheshirevisual.co.uk/sitemap-index.xml
