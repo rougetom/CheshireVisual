@@ -329,7 +329,7 @@ if (scroller && sceneEls.length) {
           s.display = video.currentTime;
         }
 
-        const reversing = s.vel < -PLAY_START || s.desired < s.display - 0.05;
+        const reversing = s.vel < -PLAY_START;
         const behind = s.desired - s.display > 0.12 && s.vel <= PLAY_HOLD;
         if (reversing || behind) {
           s.display += (s.desired - s.display) * (1 - Math.exp(-dt / POS_TAU));
