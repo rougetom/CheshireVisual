@@ -39,21 +39,20 @@ const navLinks = [
     top: 0;
     z-index: 50;
     padding: 18px var(--section-x);
-    background: transparent;
-    border-bottom: 1px solid transparent;
     color: #fff;
-    transition:
-      background 0.3s ease,
-      border-color 0.3s ease,
-      color 0.3s ease;
   }
 
-  .site-header[data-solid='true'] {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--color-border-09);
-    color: var(--color-text);
+  /* Every scene beneath the header is a video, so it always floats
+     transparent with white text — no solid/light state needed. A soft
+     top-down scrim keeps it legible over bright footage without a hard
+     background block. */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+    z-index: -1;
+    pointer-events: none;
   }
 
   .bar {
@@ -113,17 +112,10 @@ const navLinks = [
       transform 0.2s ease;
   }
 
-  .site-header:not([data-solid='true']) .cta:hover,
-  .site-header:not([data-solid='true']) .cta:focus-visible {
+  .cta:hover,
+  .cta:focus-visible {
     background: #fff;
-    color: var(--color-text) !important;
-    transform: translateY(-1px);
-  }
-
-  .site-header[data-solid='true'] .cta:hover,
-  .site-header[data-solid='true'] .cta:focus-visible {
-    background: var(--color-text);
-    color: var(--color-bg) !important;
+    color: #0a0a0a !important;
     transform: translateY(-1px);
   }
 
@@ -132,7 +124,7 @@ const navLinks = [
     width: 40px;
     height: 40px;
     border: 1px solid currentColor;
-    opacity: 0.6;
+    opacity: 0.75;
     background: transparent;
     border-radius: 50%;
     position: relative;
@@ -189,8 +181,8 @@ const navLinks = [
       align-items: flex-start;
       gap: 36px;
       padding: 0 var(--section-x-mobile);
-      background: #fffffffa;
-      color: var(--color-text);
+      background: rgba(10, 10, 10, 0.96);
+      color: #fff;
       transform: translateY(-100%);
       opacity: 0;
       transition:
@@ -240,21 +232,4 @@ const navLinks = [
       if (scroller) scroller.style.overflowY = '';
     });
   });
-
-  // The header floats transparent (white text) over the hero's video and
-  // flips to a solid, blurred white bar (dark text) once the hero has
-  // scrolled fully out of view — it stays transparent for the hero's whole
-  // pinned/scrubbing duration, not just its first screenful.
-  const hero = document.getElementById('hero');
-  if (header && hero && scroller) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          header.setAttribute('data-solid', String(!entry.isIntersecting));
-        });
-      },
-      { root: scroller, threshold: 0 }
-    );
-    io.observe(hero);
-  }
 </script>

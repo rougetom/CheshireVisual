@@ -1,4 +1,6 @@
 ---
+import VideoScene from './VideoScene.astro';
+
 // Placeholder sector wordmarks — swap for real client logos once available.
 // Deliberately generic (not fabricated company names) until you can supply
 // approved logos/case studies.
@@ -12,76 +14,61 @@ const sectors = [
 ];
 ---
 
-<section id="clients" class="clients">
-  <div class="inner">
-    <div class="head" data-reveal>
-      <p class="kicker">04 / Clients</p>
-      <h2>Trusted across<br />the North West.</h2>
-      <p class="lede">
-        From independent schools and colleges to housebuilders, construction groups and event venues
-        &mdash; teams across Cheshire and the North West bring us in when the footage has a job to do.
-      </p>
-    </div>
-
-    <ul class="sector-strip" data-reveal>
-      {sectors.map((sector) => <li>{sector}</li>)}
-    </ul>
+<VideoScene id="clients" video="/videos/hero.mp4">
+  <div class="head">
+    <p class="kicker">04 / Clients</p>
+    <h2>Trusted across the North West.</h2>
+    <p class="lede">
+      From independent schools and colleges to housebuilders and event venues &mdash; teams across
+      the North West bring us in when the footage has a job to do.
+    </p>
   </div>
-</section>
+
+  <ul class="sector-strip">
+    {sectors.map((sector) => <li>{sector}</li>)}
+  </ul>
+</VideoScene>
 
 <style>
-  .clients {
-    position: relative;
-    padding: 120px var(--section-x);
-  }
-
-  .inner {
-    position: relative;
-    z-index: 1;
-  }
-
-  .inner > [data-reveal]:nth-child(2) {
-    transition-delay: 0.12s;
-  }
-
   .kicker {
     font-size: 12px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--color-text-55);
+    color: rgba(255, 255, 255, 0.72);
     margin-bottom: 18px;
   }
 
   h2 {
     font-weight: 700;
-    font-size: clamp(32px, 4vw, 52px);
-    line-height: 1.02;
+    font-size: clamp(28px, 3.6vw, 44px);
+    line-height: 1.05;
     letter-spacing: -0.03em;
-    margin-bottom: 22px;
+    color: #fff;
+    margin-bottom: 16px;
   }
 
   .lede {
-    font-size: 16px;
-    line-height: 1.7;
-    color: var(--color-text-70);
-    max-width: 640px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.78);
+    max-width: 560px;
   }
 
   .sector-strip {
     list-style: none;
-    margin: 64px 0 0;
-    padding: 30px 0 0;
-    border-top: 1px solid var(--color-border-12);
+    margin: 32px 0 0;
+    padding: 22px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
     display: flex;
     flex-wrap: wrap;
-    gap: 20px 48px;
+    gap: 16px 40px;
   }
 
   .sector-strip li {
-    font-size: 13px;
-    letter-spacing: 0.12em;
+    font-size: 12.5px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-text-50);
+    color: rgba(255, 255, 255, 0.62);
     white-space: nowrap;
   }
 </style>

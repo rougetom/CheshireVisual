@@ -1,33 +1,19 @@
 ---
-import VideoPanel from './VideoPanel.astro';
+import VideoScene from './VideoScene.astro';
 ---
 
-<section id="about" class="about">
+<VideoScene id="about" video="/videos/hero.mp4">
   <div class="inner">
-    <div class="heading" data-reveal>
+    <div class="heading">
       <p class="kicker">01 / About Cheshire Visual</p>
       <h2>Drone &amp; 360&deg; video,<br />done to a standard.</h2>
-      <div class="panel">
-        <VideoPanel src="/videos/hero.mp4" ratio="4 / 5" anim="kb2" label="On location" />
-      </div>
     </div>
 
-    <div class="copy" data-reveal>
+    <div class="copy">
       <p>
-        Cheshire Visual is a CAA-licensed drone, aerial and 360&deg; photography and video production
-        studio based in Cheshire, filming across the North West of England &mdash; Chester, Manchester,
-        Liverpool, Warrington and beyond.
-      </p>
-      <p>
-        We work with property developers, construction firms, schools, colleges, sports clubs and event
-        venues who need footage that actually does a job: prospectus films that fill open days, progress
-        surveys that keep stakeholders informed, and 360&deg; virtual tours that let people walk a space
-        before they ever visit.
-      </p>
-      <p>
-        Every flight is planned, insured and CAA compliant. Every edit is graded, sound-designed and
-        delivered ready to publish &mdash; on your site, in your prospectus, or across social. No drama,
-        just footage that works as hard as you do.
+        CAA-licensed drone, aerial and 360&deg; photography and video production, filming across
+        Cheshire and the North West &mdash; Chester, Manchester, Liverpool, Warrington and beyond.
+        Every flight is planned and insured; every edit delivered ready to publish.
       </p>
       <ul class="stats">
         <li><span>CAA</span>Licensed remote pilot</li>
@@ -36,73 +22,53 @@ import VideoPanel from './VideoPanel.astro';
       </ul>
     </div>
   </div>
-</section>
+</VideoScene>
 
 <style>
-  .about {
-    position: relative;
-    padding: 130px var(--section-x);
-  }
-
   .inner {
-    position: relative;
-    z-index: 1;
     display: grid;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
     gap: 64px;
-  }
-
-  .inner > [data-reveal]:nth-child(1) {
-    transition-delay: 0s;
-  }
-
-  .inner > [data-reveal]:nth-child(2) {
-    transition-delay: 0.12s;
   }
 
   .kicker {
     font-size: 12px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--color-text-55);
+    color: rgba(255, 255, 255, 0.72);
     margin-bottom: 18px;
   }
 
   h2 {
     font-weight: 700;
-    font-size: clamp(34px, 4.2vw, 56px);
-    line-height: 1.02;
+    font-size: clamp(30px, 3.6vw, 48px);
+    line-height: 1.05;
     letter-spacing: -0.03em;
-  }
-
-  .panel {
-    margin-top: 40px;
-    max-width: 320px;
+    color: #fff;
   }
 
   .copy p {
-    font-size: 16px;
-    line-height: 1.75;
-    color: var(--color-text-72);
-    margin-bottom: 20px;
-    max-width: 620px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.78);
+    max-width: 560px;
   }
 
   .stats {
     list-style: none;
-    margin: 32px 0 0;
-    padding: 24px 0 0;
-    border-top: 1px solid var(--color-border-12);
+    margin: 24px 0 0;
+    padding: 20px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
     display: flex;
     flex-wrap: wrap;
-    gap: 32px;
+    gap: 28px;
   }
 
   .stats li {
-    font-size: 12.5px;
+    font-size: 11.5px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-text-55);
+    color: rgba(255, 255, 255, 0.65);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -111,20 +77,16 @@ import VideoPanel from './VideoPanel.astro';
   .stats span {
     font-family: var(--font-serif);
     font-style: italic;
-    font-size: 26px;
+    font-size: 22px;
     letter-spacing: 0;
     text-transform: none;
-    color: var(--color-text);
+    color: #fff;
   }
 
   @media (max-width: 900px) {
     .inner {
       grid-template-columns: 1fr;
-      gap: 32px;
-    }
-
-    .panel {
-      max-width: 100%;
+      gap: 20px;
     }
   }
 </style>

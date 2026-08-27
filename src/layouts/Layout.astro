@@ -47,9 +47,10 @@ const { title, description, path = '/' } = Astro.props;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
+    background: #000;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: var(--color-text) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.6) transparent;
   }
 
   .site-scroll::-webkit-scrollbar {
@@ -61,7 +62,7 @@ const { title, description, path = '/' } = Astro.props;
   }
 
   .site-scroll::-webkit-scrollbar-thumb {
-    background: var(--color-text);
+    background: rgba(255, 255, 255, 0.6);
     border-radius: 4px;
   }
 

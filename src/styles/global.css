@@ -77,32 +77,6 @@ p {
   top: 0;
 }
 
-/* Ambient motion keyframes — a slow pan/zoom used inside framed video/image
-   panels (VideoPanel.astro), independent of colour. */
-@keyframes kb {
-  0% {
-    transform: scale(1.08) translate(-1.2%, -1%);
-  }
-  50% {
-    transform: scale(1.17) translate(1.4%, 1.2%);
-  }
-  100% {
-    transform: scale(1.08) translate(-1.2%, -1%);
-  }
-}
-
-@keyframes kb2 {
-  0% {
-    transform: scale(1.1) translate(1%, 1%);
-  }
-  50% {
-    transform: scale(1.2) translate(-1.6%, -1%);
-  }
-  100% {
-    transform: scale(1.1) translate(1%, 1%);
-  }
-}
-
 @keyframes cue {
   0%,
   100% {
@@ -115,40 +89,8 @@ p {
   }
 }
 
-/* Scroll-reveal base state (JS toggles .is-visible) — content starts
-   smaller, lower and slightly out of focus, then settles into place, as if
-   flying in toward the viewer along with the camera. */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(56px) scale(0.9);
-  filter: blur(6px);
-  transition:
-    opacity 1s var(--ease-reveal),
-    transform 1s var(--ease-reveal),
-    filter 1s var(--ease-reveal);
-  will-change: opacity, transform, filter;
-}
-
-[data-reveal].is-visible {
-  opacity: 1;
-  transform: none;
-  filter: blur(0);
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
-    filter: none;
-    transition: none;
-  }
-
-  .kb,
-  .kb2 {
-    animation: none !important;
   }
 }

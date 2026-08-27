@@ -1,26 +1,15 @@
 /*
   Design tokens — Cheshire Visual
   Plain black-and-white UI chrome: white background, black type, no colour
-  accent. Footage/imagery itself stays full colour.
+  accent. Footage/imagery itself stays full colour. Most section content
+  now sits on top of a dark, full-bleed video (see VideoScene.astro) and
+  uses literal white/rgba values rather than these tokens — --color-text
+  and --color-bg remain as "the black"/"the white" for chrome that isn't
+  video-backed (the frame border, the outer margin, the footer).
 */
 :root {
-  /* Colour */
   --color-bg: #ffffff;
-  --color-bg-panel: #f2f2f0;
-  --color-bg-tile: #eeeeec;
   --color-text: #0a0a0a;
-  --color-text-72: rgba(10, 10, 10, 0.72);
-  --color-text-70: rgba(10, 10, 10, 0.7);
-  --color-text-68: rgba(10, 10, 10, 0.68);
-  --color-text-60: rgba(10, 10, 10, 0.6);
-  --color-text-55: rgba(10, 10, 10, 0.55);
-  --color-text-50: rgba(10, 10, 10, 0.5);
-  --color-text-40: rgba(10, 10, 10, 0.4);
-  --color-border-09: rgba(10, 10, 10, 0.09);
-  --color-border-12: rgba(10, 10, 10, 0.12);
-  --color-border-18: rgba(10, 10, 10, 0.18);
-  --color-border-25: rgba(10, 10, 10, 0.25);
-  --color-border-40: rgba(10, 10, 10, 0.4);
 
   /* Type */
   --font-sans: 'Space Grotesk', system-ui, sans-serif;
