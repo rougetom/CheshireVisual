@@ -24,6 +24,7 @@ interface Scrubber {
   playPending: boolean;
   playGen: number;
   lastProgress: number;
+  lastInput: number;
 }
 
 const LANDING_P = 0.4;
@@ -42,6 +43,8 @@ const PLAY_START = 0.1;
 const PLAY_HOLD = 0.03;
 const MIN_RATE = 0.28;
 const MAX_RATE = 3.5;
+// Keep the clip playing at least this long after the last scroll delta.
+const COAST_HOLD = 0.7;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -155,6 +158,7 @@ if (scroller && sceneEls.length) {
               playPending: false,
               playGen: 0,
               lastProgress: 0,
+              lastInput: 0,
             },
           ]
         : [],
@@ -287,6 +291,7 @@ if (scroller && sceneEls.length) {
           s.lastDesired = s.desired;
           s.display = s.desired;
           s.vel = 0;
+          s.lastInput = 0;
           if (!video.paused) video.pause();
           flushSeek(s);
           return;
@@ -295,6 +300,8 @@ if (scroller && sceneEls.length) {
 
         const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
         s.lastDesired = s.desired;
+        if (targetVel > 0.08) s.lastInput = time;
+        if (targetVel < -0.08) s.lastInput = 0;
         const tau = Math.abs(targetVel) > 0.05 ? VEL_ATTACK : VEL_RELEASE;
         s.vel += (targetVel - s.vel) * (1 - Math.exp(-dt / tau));
         s.vel = Math.min(MAX_RATE, Math.max(-MAX_RATE, s.vel));
@@ -303,8 +310,10 @@ if (scroller && sceneEls.length) {
         const holding = !video.paused || s.playPending;
         const canPlayForward =
           video.currentTime < end - 0.02 && shown > 0.05;
+        const coasting = s.lastInput > 0 && time - s.lastInput < COAST_HOLD * 1000;
         const shouldPlay =
-          canPlayForward && s.vel > (holding ? PLAY_HOLD : PLAY_START);
+          canPlayForward &&
+          (s.vel > (holding ? PLAY_HOLD : PLAY_START) || coasting);
 
         // Forward: play at the decaying scroll rate so every frame is shown.
         // Seeking only hits ~1s keyframes, which looks like an instant stop.
@@ -312,6 +321,7 @@ if (scroller && sceneEls.length) {
           const lag = s.desired - video.currentTime;
           let rate = Math.min(Math.max(s.vel, MIN_RATE), MAX_RATE);
           if (lag > 0.12) rate = Math.min(Math.max(s.vel + lag * 1.8, MIN_RATE), MAX_RATE);
+          if (coasting) rate = Math.max(rate, 0.85);
           video.playbackRate = rate;
           ensurePlay(s);
           if (!video.paused) {
