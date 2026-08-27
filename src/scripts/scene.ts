@@ -14,7 +14,9 @@ interface SceneRefs {
 interface Scrubber {
   video: HTMLVideoElement;
   desired: number;
+  lastDesired: number;
   display: number;
+  vel: number;
   seeking: boolean;
   watchdog: number;
 }
@@ -22,9 +24,10 @@ interface Scrubber {
 const ENTER = 0.14;
 const EXIT = 0.86;
 const LANDING_P = 0.4;
-// Seconds to cover ~63% of the remaining playhead error. Higher = more
-// coast after the wheel stops; still pulled toward the scroll mapping.
-const PLAYHEAD_TAU = 0.28;
+// Velocity smoothing: last scroll speed keeps driving the playhead after
+// the wheel stops. Position correction is slower so it can overshoot.
+const VEL_TAU = 0.16;
+const POS_TAU = 0.45;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -122,7 +125,9 @@ if (scroller && sceneEls.length) {
             {
               video,
               desired: 0,
+              lastDesired: 0,
               display: 0,
+              vel: 0,
               seeking: false,
               watchdog: 0,
             },
@@ -182,7 +187,7 @@ if (scroller && sceneEls.length) {
         content,
         eventsTarget: scroller,
         autoRaf: false,
-        lerp: 0.075,
+        lerp: 0.055,
         wheelMultiplier: 0.9,
         touchMultiplier: 1.15,
         smoothWheel: true,
@@ -197,13 +202,28 @@ if (scroller && sceneEls.length) {
       lenis?.raf(time);
 
       const progresses = fadeScenes();
-      const k = 1 - Math.exp(-dt / PLAYHEAD_TAU);
 
       scenes.forEach(({ video }, i) => {
         const s = scrubberFor(video);
         if (!s || !video?.duration) return;
-        s.desired = progresses[i] * video.duration;
-        s.display += (s.desired - s.display) * k;
+        const duration = video.duration;
+        s.desired = progresses[i] * duration;
+        if (Math.abs(s.desired - s.lastDesired) > 1.5) {
+          s.lastDesired = s.desired;
+          s.display = s.desired;
+          s.vel = 0;
+          flushSeek(s);
+          return;
+        }
+        const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
+        s.lastDesired = s.desired;
+        const vk = 1 - Math.exp(-dt / VEL_TAU);
+        const pk = 1 - Math.exp(-dt / POS_TAU);
+        s.vel += (targetVel - s.vel) * vk;
+        s.vel = Math.min(8, Math.max(-8, s.vel));
+        s.display += s.vel * dt;
+        s.display += (s.desired - s.display) * pk;
+        s.display = Math.min(Math.max(s.display, 0), Math.max(duration - 0.05, 0));
         flushSeek(s);
       });
 
