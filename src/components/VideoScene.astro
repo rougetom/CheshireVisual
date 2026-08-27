@@ -8,6 +8,12 @@
 // previous one once it starts sticking, which is what produces the
 // fade-through-black transition between scenes — no separate crossfade
 // element needed.
+//
+// `video` is an HLS manifest URL (Bunny Stream), not a plain file — there's
+// no native <source type="application/x-mpegURL">, since most browsers
+// can't parse that. It's exposed as data-hls-src instead; src/scripts/hls.ts
+// attaches it (natively on Safari, via hls.js everywhere else) before
+// scene.ts's scroll-scrub logic ever touches the element.
 interface Props {
   id: string;
   video: string;
@@ -24,9 +30,7 @@ const {
 <section id={id} class="scene" data-scene>
   <div class="stage">
     <div class="stage-inner">
-      <video class="footage" muted loop playsinline preload="auto">
-        <source src={video} type="video/mp4" />
-      </video>
+      <video class="footage" muted loop playsinline preload="auto" data-hls-src={video}></video>
       <div class="scrim" style={`background:${scrim}`}></div>
       <div class="content">
         <slot />

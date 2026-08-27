@@ -14,6 +14,8 @@ reads as moving forward through a sequence of shots on the z-axis, not scrolling
 - **Astro** — static-first rendering, minimal client JS, great Core Web Vitals out of the box.
 - **@fontsource** — self-hosted Space Grotesk + Instrument Serif (no third-party font requests).
 - **@astrojs/sitemap** — automatic `sitemap-index.xml` at build time.
+- **hls.js** — plays the Bunny Stream HLS video source in every browser except Safari (which has
+  native HLS support); lazy-loaded so non-Safari browsers only fetch it when a scene needs it.
 
 ## Getting started
 
@@ -31,10 +33,9 @@ src/
   components/    Section components (Header, Hero, About, Services, UseCases, Clients, Contact, Footer)
                  VideoScene.astro — the shared full-bleed video "scene" wrapper (see below)
   layouts/       Layout.astro — <head>, SEO, and the site's fixed frame/scroll shell
-  scripts/       scene.ts — drives every scene's fade/scale/video-scrub and in-page nav
+  scripts/       hls.ts — attaches each scene's Bunny CDN HLS stream to its <video> element
+                 scene.ts — drives every scene's fade/scale/video-scrub and in-page nav
   styles/        tokens.css (design tokens), global.css
-public/
-  videos/        section footage lives here (see below)
 ```
 
 ## The frame shell
@@ -98,17 +99,25 @@ link, etc.): a scene's own top (`p=0`) is where it's still transparent for every
 hero, so a plain browser fragment-jump would land the visitor on a black screen. Clicks are
 redirected to `p≈0.4` of the target scene's range instead, where it's already fully visible.
 
-**Every scene points at the same clip today** (`public/videos/hero.mp4`) — there's only one piece
-of footage yet. Swapping in more is just a matter of pointing a `VideoScene`'s `video` prop at a
-different file; there's no shared/crossfading state between scenes to update since each one is
-already independent. To add footage:
+**Every scene points at the same clip today**, streamed live from Bunny Stream as HLS rather than
+served as a local file — there's only one piece of footage yet. A `VideoScene`'s `video` prop is an
+`.m3u8` manifest URL (currently
+`https://vz-fa5f7bf1-41c.b-cdn.net/1222f359-d210-400e-afdc-7f0222e0d18b/playlist.m3u8`), passed straight
+through to the `<video>` as `data-hls-src` rather than a child `<source>`. Swapping in more footage
+later is just a matter of pointing a `VideoScene`'s `video` prop at a different manifest URL; there's
+no shared/crossfading state between scenes to update since each one is already independent.
 
-```bash
-ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
-```
+`src/scripts/hls.ts` runs before `scene.ts` and attaches each `[data-hls-src]` video to its stream:
 
-(`-movflags +faststart` matters since every scene's video is scrubbed before it's necessarily fully
-downloaded.)
+- **Safari** understands HLS natively and does it better than any JS library can, so it just gets
+  `video.src = <manifest url>` directly — no library involved.
+- **Every other browser** needs [`hls.js`](https://github.com/video-dev/hls.js) to demux the stream
+  through Media Source Extensions. It's dynamically `import()`-ed (not a static import) so it lands
+  in its own lazily-fetched chunk — Safari never downloads it, and no browser pays for it until a
+  scene actually needs it.
+
+Either path ends with a normal `HTMLVideoElement` with a working `.currentTime`, so `scene.ts`'s
+scroll-scrub logic downstream doesn't need to know or care which one a given browser took.
 
 ## Header
 
