@@ -5,7 +5,7 @@ const tiles = [
     tag: 'Aerial',
     anim: 'kb',
     pos: '30% 20%',
-    stops: '#2a2a34, #131318 52%, #0c0c0e 82%',
+    stops: '#e2e2de, #eeeeec 52%, #f4f4f2 82%',
     desc: 'Prospectus films & open-day aerial tours',
   },
   {
@@ -13,7 +13,7 @@ const tiles = [
     tag: 'Film',
     anim: 'kb2',
     pos: '70% 30%',
-    stops: '#2b2b33, #141419 52%, #0c0c0e 82%',
+    stops: '#e0e0dc, #ececea 52%, #f3f3f1 82%',
     desc: 'Matchday highlights & facility showcases',
   },
   {
@@ -21,7 +21,7 @@ const tiles = [
     tag: '4K',
     anim: 'kb',
     pos: '50% 80%',
-    stops: '#2c2b32, #141318 50%, #0b0b0d 82%',
+    stops: '#dfdfdb, #ebebe9 50%, #f2f2f0 82%',
     desc: 'Progress surveys & site documentation',
   },
   {
@@ -29,7 +29,7 @@ const tiles = [
     tag: '360°',
     anim: 'kb2',
     pos: '24% 40%',
-    stops: '#29292f, #131317 52%, #0c0c0e 82%',
+    stops: '#e3e3df, #efefed 52%, #f4f4f2 82%',
     desc: 'Campus 360° tours & recruitment content',
   },
   {
@@ -37,7 +37,7 @@ const tiles = [
     tag: '360°',
     anim: 'kb',
     pos: '76% 22%',
-    stops: '#2a2a33, #131318 50%, #0b0b0d 82%',
+    stops: '#e1e1dd, #ededeb 50%, #f3f3f1 82%',
     desc: 'Event spaces from every angle',
   },
   {
@@ -45,21 +45,13 @@ const tiles = [
     tag: 'Film',
     anim: 'kb2',
     pos: '46% 62%',
-    stops: '#2c2b34, #141419 52%, #0c0c0e 82%',
+    stops: '#dfdfdb, #ebebe9 52%, #f2f2f0 82%',
     desc: 'Listings & developments, cinematic and 360°',
   },
 ];
 ---
 
-<section
-  id="use-cases"
-  class="use-cases"
-  data-shot
-  data-grade="radial-gradient(130% 90% at 50% 0%, #1c1c22, #0e0e11 55%, #0a0a0c 85%)"
-  data-scrim="linear-gradient(180deg, rgba(10,10,11,.85), rgba(10,10,11,.6) 30%, rgba(10,10,11,.94))"
-  data-anim="kb"
-  data-video="/videos/hero.mp4"
->
+<section id="use-cases" class="use-cases">
   <div class="inner">
     <div class="head">
       <div data-reveal>
@@ -77,7 +69,6 @@ const tiles = [
               class={`grade ${tile.anim}`}
               style={`background: radial-gradient(120% 90% at ${tile.pos}, ${tile.stops})`}
             />
-            <div class="grain-layer" style="opacity:.08" />
             <div class="scrim" />
             <span class="play" aria-hidden="true">▶</span>
             <span class="tag">{tile.tag}</span>
@@ -144,7 +135,7 @@ const tiles = [
     font-size: 12px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: var(--color-text-55);
     margin-bottom: 18px;
   }
 
@@ -174,6 +165,7 @@ const tiles = [
     position: relative;
     overflow: hidden;
     background: var(--color-bg-tile);
+    border: 1px solid var(--color-text);
     aspect-ratio: 4 / 3;
     cursor: pointer;
     transition: box-shadow 0.25s ease;
@@ -181,7 +173,7 @@ const tiles = [
 
   .tile:hover,
   .tile:focus-within {
-    box-shadow: inset 0 0 0 1px var(--color-accent-ring);
+    box-shadow: inset 0 0 0 2px var(--color-text);
   }
 
   .grade {
@@ -200,7 +192,7 @@ const tiles = [
   .scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 46%, rgba(0, 0, 0, 0.82));
+    background: linear-gradient(180deg, transparent 46%, rgba(10, 10, 10, 0.88));
   }
 
   .play {
@@ -215,7 +207,7 @@ const tiles = [
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--color-text-70);
   }
 
   .tag {
@@ -239,12 +231,13 @@ const tiles = [
     font-weight: 600;
     font-size: 21px;
     letter-spacing: -0.015em;
+    color: #fff;
   }
 
   .label p {
     font-size: 12.5px;
     line-height: 1.5;
-    color: var(--color-text-60);
+    color: rgba(255, 255, 255, 0.7);
     margin-top: 7px;
   }
 

@@ -39,10 +39,21 @@ const navLinks = [
     top: 0;
     z-index: 50;
     padding: 18px var(--section-x);
-    background: rgba(12, 12, 13, 0.5);
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    color: #fff;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .site-header[data-solid='true'] {
+    background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--color-border-09);
+    color: var(--color-text);
   }
 
   .bar {
@@ -77,13 +88,14 @@ const navLinks = [
     font-size: 12px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--color-text-70);
-    transition: color 0.2s ease;
+    color: inherit;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
   }
 
   .primary-nav a:hover,
   .primary-nav a:focus-visible {
-    color: var(--color-text);
+    opacity: 1;
   }
 
   .cta {
@@ -91,19 +103,27 @@ const navLinks = [
     align-items: center;
     gap: 8px;
     padding: 10px 18px;
-    border: 1px solid var(--color-accent);
-    color: var(--color-text) !important;
-    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    border: 1px solid currentColor;
+    color: inherit !important;
     border-radius: 999px;
     white-space: nowrap;
     transition:
       background 0.2s ease,
+      color 0.2s ease,
       transform 0.2s ease;
   }
 
-  .cta:hover,
-  .cta:focus-visible {
-    background: var(--color-accent);
+  .site-header:not([data-solid='true']) .cta:hover,
+  .site-header:not([data-solid='true']) .cta:focus-visible {
+    background: #fff;
+    color: var(--color-text) !important;
+    transform: translateY(-1px);
+  }
+
+  .site-header[data-solid='true'] .cta:hover,
+  .site-header[data-solid='true'] .cta:focus-visible {
+    background: var(--color-text);
+    color: var(--color-bg) !important;
     transform: translateY(-1px);
   }
 
@@ -111,7 +131,8 @@ const navLinks = [
     display: none;
     width: 40px;
     height: 40px;
-    border: 1px solid var(--color-border-25);
+    border: 1px solid currentColor;
+    opacity: 0.6;
     background: transparent;
     border-radius: 50%;
     position: relative;
@@ -126,7 +147,7 @@ const navLinks = [
     left: 11px;
     right: 11px;
     height: 1px;
-    background: var(--color-text);
+    background: currentColor;
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
@@ -168,7 +189,8 @@ const navLinks = [
       align-items: flex-start;
       gap: 36px;
       padding: 0 var(--section-x-mobile);
-      background: #0c0c0dfa;
+      background: #fffffffa;
+      color: var(--color-text);
       transform: translateY(-100%);
       opacity: 0;
       transition:
@@ -202,19 +224,37 @@ const navLinks = [
   const header = document.querySelector<HTMLElement>('.site-header');
   const toggle = header?.querySelector<HTMLButtonElement>('.menu-toggle');
   const nav = header?.querySelector<HTMLElement>('.primary-nav');
+  const scroller = document.getElementById('siteScroll');
 
   toggle?.addEventListener('click', () => {
     const isOpen = header?.getAttribute('data-open') === 'true';
     header?.setAttribute('data-open', String(!isOpen));
     toggle.setAttribute('aria-expanded', String(!isOpen));
-    document.body.style.overflow = isOpen ? '' : 'hidden';
+    if (scroller) scroller.style.overflowY = isOpen ? '' : 'hidden';
   });
 
   nav?.querySelectorAll('a').forEach((a) => {
     a.addEventListener('click', () => {
       header?.setAttribute('data-open', 'false');
       toggle?.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
+      if (scroller) scroller.style.overflowY = '';
     });
   });
+
+  // The header floats transparent (white text) over the hero's video and
+  // flips to a solid, blurred white bar (dark text) once the hero has
+  // scrolled fully out of view — it stays transparent for the hero's whole
+  // pinned/scrubbing duration, not just its first screenful.
+  const hero = document.getElementById('hero');
+  if (header && hero && scroller) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          header.setAttribute('data-solid', String(!entry.isIntersecting));
+        });
+      },
+      { root: scroller, threshold: 0 }
+    );
+    io.observe(hero);
+  }
 </script>

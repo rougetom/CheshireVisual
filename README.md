@@ -3,9 +3,11 @@
 Marketing site for [cheshirevisual.co.uk](https://cheshirevisual.co.uk) — a drone, aerial and 360°
 photography/video studio based in Cheshire, serving the North West of England.
 
-Built with [Astro](https://astro.build) for fast, SEO-first static output. A single fixed video
-backdrop plays behind the whole page, tinted differently per section, while each section's content
-fades and flies in toward the viewer as it scrolls into view — as if it's part of the same flight.
+Built with [Astro](https://astro.build) for fast, SEO-first static output. Plain black-and-white
+design: white background, black type, grayscale imagery, no colour accent. The whole page sits
+inside a fixed, rounded, bordered frame (see below); the hero is a full-bleed video that scrubs to
+scroll position, Wolverine Worldwide–style, with the nav floating transparently over it until you
+scroll past; and content fades/scales/blurs in as it scrolls into view, elsewhere in the page.
 
 ## Stack
 
@@ -27,53 +29,76 @@ npm run preview    # serve the production build locally
 ```
 src/
   components/    Section components (Header, Hero, About, Services, UseCases, Clients, Contact, Footer)
-                 BackgroundVideo.astro — the fixed video backdrop (see below)
-  layouts/       Layout.astro — shared <head>, SEO
-  scripts/       backdrop.ts (video backdrop crossfade), reveal.ts (fly-in scroll-reveal)
-  styles/        tokens.css (design tokens), global.css
+                 VideoPanel.astro — the reusable framed video panel (see below)
+  layouts/       Layout.astro — <head>, SEO, and the site's fixed frame/scroll shell
+  scripts/       reveal.ts (fly-in scroll-reveal)
+  styles/        tokens.css (design tokens — plain black/white), global.css
 public/
-  videos/        section background footage lives here (see below)
+  videos/        section footage lives here (see below)
 ```
 
-## Video backgrounds
+## The frame shell
 
-`src/components/BackgroundVideo.astro` renders **one** `<video>`, fixed to the viewport
-(`position: fixed`, z-index 0 — `main`/the footer sit at z-index 1, the header at 50), sitting
-behind the entire page rather than inside any one section. Back to front, it layers:
+`src/layouts/Layout.astro` wraps every page in `.site-frame` — `position: fixed; inset: 12px`, a
+1.5px black border, 24px border radius, `overflow: hidden` — so the whole site reads as a single
+card sitting 12px in from the true (white) page edge, permanently in place. **All scrolling happens
+inside `.site-scroll`** (a plain `overflow-y: auto` div filling the frame, `id="siteScroll"`), not
+on `<html>`/`<body>` — `body` has `overflow: hidden` so the browser's own scrollbar never appears;
+`.site-scroll` gets a thin styled one instead.
 
-1. A graded CSS gradient with a slow "ken burns" drift — renders immediately, zero network cost,
-   and is what's visible while the video is still loading (or under `prefers-reduced-motion`,
-   which hides the video entirely).
-2. The `<video muted loop playsinline autoplay>` itself.
-3. A dark scrim gradient (for text legibility).
-4. Film-grain texture.
+This has one consequence worth knowing if you touch scroll-driven code: anything that needs to react
+to scrolling **must listen on `document.getElementById('siteScroll')`, not `window`** — `window`
+never fires `scroll` events here, since the document itself doesn't scroll. `IntersectionObserver`
+doesn't need special handling (its default `root: null` still correctly clips against `.site-scroll`
+as an intervening scroll container), which is why `reveal.ts` needed no changes for this.
 
-Every section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) is just a
-`<section data-shot data-grade="..." data-scrim="..." data-anim="kb|kb2" data-video="...">` — no
-per-section backdrop markup. `src/scripts/backdrop.ts` watches every `[data-shot]` section with an
-`IntersectionObserver`, and whichever has the most viewport overlap right now has its
-grade/scrim/video values applied to the fixed backdrop, crossfading the two ambient tint layers
-(grade has two stacked instances, scrim too — the incoming one fades in as the outgoing one fades
-out). The hero's shot is also rendered server-side into the first grade/scrim layer via
-`BackgroundVideo`'s props, so it's already correct before any JS runs.
+`.site-frame` also carries `transform: translateZ(0)` — with no transform, any `position: fixed`
+descendant (the header, the mobile nav overlay) would position itself against the raw browser
+viewport and ignore the frame entirely; a transform makes an element the containing block for fixed
+descendants, so they stay correctly contained within the rounded, bordered frame instead of
+escaping it.
 
-**Every section points at the same clip today** (`public/videos/hero.mp4`) — only the grade/scrim
-tint actually changes per section right now. The mechanism supports different footage per section
-already: give a section its own `data-video`, and the backdrop script swaps the `<video>`'s `src`
-to it once that section becomes dominant (skipped entirely when the target clip is unchanged, which
-is why nothing reloads today). That swap is a hard cut, not a crossfade — there's only one `<video>`
-element. If/when real per-shot footage lands, upgrade `backdrop.ts` to a second `<video>` layer
-(mirroring how the grade/scrim pairs already crossfade) for a smooth transition between clips.
+## Header
 
-To add or replace footage:
+`src/components/Header.astro` is `position: fixed` (so it never occupies layout space — the hero's
+video sits truly full-bleed at y=0 beneath it) and starts fully transparent with white text,
+floating directly over the hero's video. An `IntersectionObserver` on `#hero` (rooted at
+`#siteScroll`) flips `data-solid="true"` once the hero has scrolled completely out of view, at which
+point it becomes a solid, blurred white bar with black text — needed once subsequent sections'
+white backgrounds are behind it instead of the dark hero video. Nav links, the CTA and the mobile
+menu button all use `color: inherit`/`currentColor` off `.site-header`'s own `color`, so they flip
+together automatically; the mobile nav's full-screen overlay hardcodes dark text (`.primary-nav`
+sets its own `color`) since its background is always solid white regardless of header state.
+
+## Hero
+
+`src/components/Hero.astro` is a tall (`220vh`) scene containing a `position: sticky; top: 0;
+height: 100vh` stage — the video pins in place and fills the viewport while you scroll through the
+scene, then releases and scrolls away normally once you're past it (the classic pinned-hero
+pattern). An inline script listens for `scroll` on `#siteScroll`, computes how far through the
+scene you are, and sets `video.currentTime` directly — so scrolling scrubs through the clip like a
+showreel rather than it just autoplaying. The video is desaturated (`filter: grayscale(1)`) and
+sits under a bottom-heavy black gradient scrim so the white headline stays legible regardless of
+what's in frame.
+
+## Video panels
+
+`src/components/VideoPanel.astro` is the reusable **framed**, in-flow video/photo panel used inside
+sections (currently just `About`) — a bordered box with corner brackets, an optional label, and the
+same grayscale treatment as the hero. It's deliberately a contained panel rather than a full-bleed
+backdrop, since a full-bleed dark backdrop doesn't suit a white page — only the hero (a distinct,
+full-bleed treatment of its own) breaks that rule.
+
+**Every video reference points at the same clip today** (`public/videos/hero.mp4`) — there's only
+one piece of footage. To add more, drop additional files at `public/videos/<name>.mp4`:
 
 ```bash
 ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
 ```
 
-Drop the result at `public/videos/<name>.mp4` (H.264, muted, looping cleanly — no meshopt/Draco-style
-concerns here, that constraint was specific to the drone model this project used to have) and point
-the relevant section's `data-video` at it.
+(`-movflags +faststart` matters for the hero specifically, since it's scrubbed before fully
+downloaded — harmless elsewhere.) Point the hero's `<source>` or a `VideoPanel`'s `src` prop at the
+new file.
 
 ## Content fly-in
 
