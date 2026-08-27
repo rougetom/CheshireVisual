@@ -5,11 +5,9 @@ photography/video studio based in Cheshire, serving the North West of England.
 
 Built with [Astro](https://astro.build) for fast, SEO-first static output. Plain black-and-white UI
 chrome (white outer margin, black frame border, white nav text) around full-colour video. The page
-never pans vertically — every section is a full-bleed video "step". Scrolling is a gesture that
-advances to the next step, not a position: each step's video plays through at its own pace, content
-fades in a beat after the step becomes active (so you see the shot before you read the copy), and
-you can't advance to the next step until the current video has finished. It reads as moving forward
-through a sequence of shots, one at a time, not scrolling down a document.
+never pans vertically — every section is a full-bleed video "scene" that fades up from black, grows
+slightly and scrubs its video as you scroll, then fades back to black as the next one covers it. It
+reads as moving forward through a sequence of shots on the z-axis, not scrolling down a document.
 
 ## Stack
 
@@ -31,9 +29,9 @@ npm run preview    # serve the production build locally
 ```
 src/
   components/    Section components (Header, Hero, About, Services, UseCases, Clients, Contact, Footer)
-                 VideoScene.astro — the shared full-bleed video "step" wrapper (see below)
+                 VideoScene.astro — the shared full-bleed video "scene" wrapper (see below)
   layouts/       Layout.astro — <head>, SEO, and the site's fixed frame/scroll shell
-  scripts/       scene.ts — the paginated step state machine (advance gating, content delay, nav)
+  scripts/       scene.ts — drives every scene's fade/scale/video-scrub and in-page nav
   styles/        tokens.css (design tokens), global.css
 public/
   videos/        section footage lives here (see below)
@@ -49,12 +47,9 @@ on `<html>`/`<body>` — `body` has `overflow: hidden` so the browser's own scro
 `.site-scroll` gets a thin styled one instead, and its own background is black (matching the video
 scenes) rather than the frame's white.
 
-`.site-scroll` is a normal `overflow-y: auto` div by default — that's the progressive-enhancement
-fallback (works with no JS, and is what stays active under `prefers-reduced-motion`): every step
-just stacks in plain document flow, one viewport tall, videos autoplaying, content always visible,
-free-scrollable. `src/scripts/scene.ts` opts into the paginated experience by setting
-`data-paginate="true"` on `#siteScroll`, which is what every paginated-mode CSS rule (in
-`global.css`) keys off — see "Video steps" below.
+Anything that needs to react to scrolling **must listen on `document.getElementById('siteScroll')`,
+not `window`** — `window` never fires `scroll` events here, since the document itself doesn't
+scroll.
 
 `.site-frame` also carries `transform: translateZ(0)` — with no transform, any `position: fixed`
 descendant (the header, the mobile nav overlay) would position itself against the raw browser
@@ -62,41 +57,58 @@ viewport and ignore the frame entirely; a transform makes an element the contain
 descendants, so they stay correctly contained within the rounded, bordered frame instead of
 escaping it.
 
-## Video steps — gated pagination, not scroll-scrubbing
+## Video scenes — the z-axis scroll
 
 Every top-level section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) is a
-`VideoScene.astro` — a full-bleed, full-viewport video with content overlaid on it — and the
-`Footer` is a final, video-less step of the same kind. `src/scripts/scene.ts` treats all of them
-(anything with `[data-scene]`) as one ordered sequence and runs a small state machine over it:
+`VideoScene.astro`: a full-bleed, full-viewport video with content overlaid on it. Structurally,
+each is a tall (`200vh`) wrapper (`.scene`) containing a `position: sticky; top: 0; height: 100vh`
+stage, so it pins in place and fills the viewport for the length of its own scroll range, then
+releases once you've scrolled past it — the classic pinned-section trick, applied to every section
+rather than just the hero.
 
-- **One step visible at a time.** Steps are `position: absolute; inset: 0` stacked on each other
-  (see the `#siteScroll[data-paginate="true"]` rules in `global.css`); only `.is-active` is opaque
-  and interactive. Activating a step resets its video to `currentTime = 0` and plays it, and pauses
-  whatever step was just left.
-- **Advancing is gated on the video finishing.** Wheel, touch-swipe and arrow/page keys all funnel
-  into `next()`/`prev()`; `next()` is a no-op unless the current step's video `ended` (or is within
-  `END_TOLERANCE_S` of its duration — video-end precision is imperfect, and a video with no/broken
-  duration never hard-locks the visitor). Until then, more scrolling simply does nothing — the point
-  is that the video is watched, not skipped past.
-- **Content arrives a beat late.** Each step's `.content` fades in `CONTENT_DELAY_MS` (550ms) after
-  it becomes active, so the shot reads before the copy does, rather than both slamming in at once.
-- **In-page nav links bypass the gate.** Clicking "Contact" is a deliberate jump, not organic forward
-  progress, so `scene.ts` intercepts `<a href="#id">` clicks and activates that step directly
-  instead of going through `next()`.
+`src/scripts/scene.ts` drives all of them from one shared loop. For each scene it computes a local
+progress `p` from 0 (top of that scene's own scroll range) to 1 (bottom), purely from
+`getBoundingClientRect()` — independent of every other scene — and applies:
 
-**Progressive enhancement / `prefers-reduced-motion`:** this whole system is opt-in — `scene.ts`
-only sets `data-paginate="true"` (and only then do the stacking/gating CSS rules in `global.css`
-apply) when JS has run and motion isn't reduced. Without JS, or with reduced motion requested, every
-step just stays in the plain stacked-document-flow layout `VideoScene.astro`/`Footer.astro` define
-by default: free-scrollable, all content visible, videos autoplaying without gating.
+- **Opacity**: fades in over the first 14% of `p`, holds fully visible, fades out over the last 14%.
+- **Scale**: grows continuously from 0.86× to 1.16× across the whole range — the "z-axis flythrough"
+  feel, applied to a `.stage-inner` wrapper (not the sticky `.stage` itself, which stays untransformed
+  so its `overflow: hidden` keeps correctly clipping the scaled content).
+- **Video**: `video.currentTime = p * video.duration` — scrubbed directly, never autoplaying and
+  never `.play()`-ed (except under `prefers-reduced-motion`, where scrubbing is meaningless and
+  each video just autoplays/loops instead). `preload="auto"` on every `<video>` means the browser
+  proactively buffers/decodes on its own — this is what actually gets a frame on screen before the
+  first scroll, no `autoplay` attribute or `.play()` call required for that.
 
-**Every step points at the same clip today** (`public/videos/hero.mp4`) — there's only one piece of
-footage yet. Swapping in more is just pointing a `VideoScene`'s `video` prop at a different file; the
-gating/timing logic is per-step already, nothing to update elsewhere. To add footage:
+**The page never pans.** Because every `.stage` has an opaque background (video, or `#000` before it
+loads) and stays `position: sticky`, a later scene simply paints over the one before it the instant
+it starts sticking — no crossfade element needed, no z-index management. Since the outgoing scene
+has already faded toward transparent/black by the time the next one arrives, and the incoming one
+fades up from the sticky stage's own black background, the transition reads as "fade to black, then
+fade up into the next shot" exactly as intended, for free.
+
+One deliberate special case: the **first** scene (the hero) is what the page loads on, so it skips
+the entrance fade — it's fully opaque at `p=0` (just slightly scaled down, at rest) rather than
+requiring the user to scroll before it appears. Every other scene's entrance is untouched, since
+their `p=0` coincides with the moment they start covering the previous scene, which is when a
+fade-up-from-black reads as a transition rather than a load-time flash.
+
+`scene.ts` also intercepts in-page `<a href="#id">` clicks (nav links, the "discuss your brief"
+link, etc.): a scene's own top (`p=0`) is where it's still transparent for every scene except the
+hero, so a plain browser fragment-jump would land the visitor on a black screen. Clicks are
+redirected to `p≈0.4` of the target scene's range instead, where it's already fully visible.
+
+**Every scene points at the same clip today** (`public/videos/hero.mp4`) — there's only one piece
+of footage yet. Swapping in more is just a matter of pointing a `VideoScene`'s `video` prop at a
+different file; there's no shared/crossfading state between scenes to update since each one is
+already independent. To add footage:
 
 ```bash
-ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" public/videos/<name>.mp4
+ffmpeg -i input.mov -an -vcodec libx264 -crf 23 -preset slow -vf "scale='min(1920,iw)':-2" -movflags +faststart public/videos/<name>.mp4
 ```
+
+(`-movflags +faststart` matters since every scene's video is scrubbed before it's necessarily fully
+downloaded.)
 
 ## Header
 

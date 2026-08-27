@@ -2,18 +2,16 @@
 const year = new Date().getFullYear();
 ---
 
-<footer id="footer" class="site-footer" data-scene>
-  <div class="content">
-    <div class="wordmark">Cheshire Visual</div>
-    <nav aria-label="Footer">
-      <a href="#about">About</a>
-      <a href="#services">Services</a>
-      <a href="#use-cases">Use cases</a>
-      <a href="#clients">Clients</a>
-      <a href="#contact">Contact</a>
-    </nav>
-    <p class="legal">&copy; {year} Cheshire Visual · CAA licensed &amp; insured</p>
-  </div>
+<footer class="site-footer">
+  <div class="wordmark">Cheshire Visual</div>
+  <nav aria-label="Footer">
+    <a href="#about">About</a>
+    <a href="#services">Services</a>
+    <a href="#use-cases">Use cases</a>
+    <a href="#clients">Clients</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  <p class="legal">&copy; {year} Cheshire Visual · CAA licensed &amp; insured</p>
 </footer>
 
 <style>
@@ -25,15 +23,9 @@ const year = new Date().getFullYear();
     padding: 44px var(--section-x);
     display: flex;
     align-items: center;
-  }
-
-  .content {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 30px;
     flex-wrap: wrap;
-    width: 100%;
   }
 
   .wordmark {

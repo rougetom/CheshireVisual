@@ -1,155 +1,117 @@
-// Drives the paginated video-scene experience: one step fills the screen
-// at a time (every VideoScene, plus the footer as a final non-video step),
-// and advancing to the next step is gated on the current step's video
-// having finished playing — "scroll" is really just an advance/retreat
-// gesture, not a continuous position.
+// Drives every VideoScene: computed purely from each scene's own scroll
+// position, independent of the others. For a scene's local progress p
+// (0 at the top of its scroll range, 1 at the bottom):
+//   - opacity fades in over the first ENTER fraction, holds, then fades
+//     out over the last (1 - EXIT) fraction
+//   - scale grows continuously from SCALE_FROM to SCALE_TO across the
+//     whole range — the "flying toward camera" z-axis feel
+//   - the scene's video is scrubbed directly to p * duration
 //
-// Progressive enhancement: without this script (or under
-// prefers-reduced-motion, where it deliberately does nothing beyond
-// autoplaying videos), every step's own base CSS keeps it in normal
-// stacked document flow — visible, scrollable, no gating. Paginated mode
-// is opt-in, switched on by setting `data-paginate="true"` on #siteScroll,
-// which is what the CSS in global.css keys off of.
+// The page itself never pans: each scene is `position: sticky`, so once a
+// later scene starts sticking it simply paints over the (by then
+// faded-to-transparent) scene before it. That's what produces the
+// fade-through-black transition — no separate crossfade element needed,
+// as long as every stage has an opaque background (see VideoScene.astro).
 
-interface Step {
+interface SceneRefs {
   el: HTMLElement;
+  inner: HTMLElement;
   video: HTMLVideoElement | null;
-  content: HTMLElement | null;
 }
 
-const CONTENT_DELAY_MS = 550; // let the video read on its own before text arrives
-const TRANSITION_LOCK_MS = 1150; // must cover the CSS opacity/scale transition durations
-const END_TOLERANCE_S = 0.25;
-const WHEEL_DELTA_THRESHOLD = 8;
-const WHEEL_COOLDOWN_MS = 250;
-const SWIPE_THRESHOLD_PX = 40;
+const ENTER = 0.14;
+const EXIT = 0.86;
+const SCALE_FROM = 0.86;
+const SCALE_TO = 1.16;
+
+const ease = (t: number) => t * t * (3 - 2 * t);
 
 const scroller = document.getElementById('siteScroll');
-const main = document.getElementById('main');
+const sceneEls = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]'));
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const stepEls = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]'));
 
-if (reduceMotion) {
-  // No gating, no locking — just make sure every step's video is playing
-  // for whoever's landed on it, since the fallback CSS shows them all.
-  stepEls.forEach((el) => el.querySelector('video')?.play().catch(() => {}));
-} else if (scroller && main && stepEls.length) {
-  scroller.dataset.paginate = 'true';
+// In-page nav links (`href="#id"`) target a scene's id, but a scene's own
+// top (p=0) is where it's still transparent/black for every scene except
+// the first — the browser's native fragment jump would land the user on a
+// black screen. Intercept these and land partway into the scene's range
+// instead, where it's already fully faded in.
+if (scroller) {
+  const LANDING_P = 0.4;
 
-  const steps: Step[] = stepEls.map((el) => ({
-    el,
-    video: el.querySelector('video'),
-    content: el.querySelector<HTMLElement>('.content'),
-  }));
-
-  let activeIndex = 0;
-  let transitioning = false;
-  let contentTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const canAdvance = (): boolean => {
-    const video = steps[activeIndex].video;
-    if (!video) return true;
-    if (!Number.isFinite(video.duration)) return true; // never hard-lock on a broken video
-    return video.ended || video.duration - video.currentTime < END_TOLERANCE_S;
-  };
-
-  const activate = (index: number) => {
-    steps.forEach((step, i) => step.el.classList.toggle('is-active', i === index));
-
-    if (contentTimer) clearTimeout(contentTimer);
-    const { video, content } = steps[index];
-    content?.classList.remove('is-shown');
-
-    if (video) {
-      video.currentTime = 0;
-      video.play().catch(() => {});
-    }
-
-    contentTimer = setTimeout(() => content?.classList.add('is-shown'), CONTENT_DELAY_MS);
-  };
-
-  const goTo = (index: number) => {
-    if (index < 0 || index >= steps.length || index === activeIndex || transitioning) return;
-    transitioning = true;
-    steps[activeIndex].video?.pause();
-    activeIndex = index;
-    activate(index);
-    window.setTimeout(() => {
-      transitioning = false;
-    }, TRANSITION_LOCK_MS);
-  };
-
-  const next = () => {
-    if (transitioning || !canAdvance()) return;
-    goTo(activeIndex + 1);
-  };
-
-  const prev = () => {
-    if (transitioning) return;
-    goTo(activeIndex - 1);
-  };
-
-  let wheelCooldown = false;
-  scroller.addEventListener(
-    'wheel',
-    (event) => {
-      event.preventDefault();
-      if (wheelCooldown || Math.abs(event.deltaY) < WHEEL_DELTA_THRESHOLD) return;
-      wheelCooldown = true;
-      window.setTimeout(() => {
-        wheelCooldown = false;
-      }, WHEEL_COOLDOWN_MS);
-      if (event.deltaY > 0) next();
-      else prev();
-    },
-    { passive: false }
-  );
-
-  let touchStartY = 0;
-  scroller.addEventListener(
-    'touchstart',
-    (event) => {
-      touchStartY = event.touches[0].clientY;
-    },
-    { passive: true }
-  );
-  scroller.addEventListener(
-    'touchend',
-    (event) => {
-      const dy = touchStartY - event.changedTouches[0].clientY;
-      if (Math.abs(dy) < SWIPE_THRESHOLD_PX) return;
-      if (dy > 0) next();
-      else prev();
-    },
-    { passive: true }
-  );
-
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowDown' || event.key === 'PageDown') {
-      event.preventDefault();
-      next();
-    } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
-      event.preventDefault();
-      prev();
-    }
-  });
-
-  // In-page nav links (`href="#id"`) jump straight to a step, bypassing
-  // the video-end gate — that gate is for organic forward progress, not a
-  // deliberate "take me to Contact" click.
   document.addEventListener('click', (event) => {
     const link = (event.target as HTMLElement)?.closest('a[href^="#"]');
     if (!link) return;
-    const id = link.getAttribute('href')!.slice(1);
-    const index = stepEls.findIndex((el) => el.id === id);
-    if (index === -1) return;
-    event.preventDefault();
-    if (index === activeIndex) return;
-    transitioning = false; // a deliberate jump always wins over an in-flight lock
-    steps[activeIndex].video?.pause();
-    activeIndex = index;
-    activate(index);
-  });
 
-  activate(0);
+    const id = link.getAttribute('href')!.slice(1);
+    const target = document.getElementById(id);
+    if (!target || !target.hasAttribute('data-scene')) return;
+
+    event.preventDefault();
+    const isFirst = sceneEls[0] === target;
+    const range = target.offsetHeight - scroller.clientHeight;
+    const top = isFirst ? 0 : target.offsetTop + LANDING_P * Math.max(range, 0);
+    scroller.scrollTo({ top, behavior: reduceMotion ? 'instant' : 'smooth' });
+  });
+}
+
+if (scroller && sceneEls.length) {
+  const scenes: SceneRefs[] = sceneEls.map((el) => ({
+    el,
+    inner: el.querySelector<HTMLElement>('.stage-inner')!,
+    video: el.querySelector('video'),
+  }));
+
+  if (reduceMotion) {
+    scenes.forEach(({ video }) => video?.play().catch(() => {}));
+  } else {
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const viewportH = scroller.clientHeight;
+
+      scenes.forEach(({ el, inner, video }, i) => {
+        const rect = el.getBoundingClientRect();
+        const total = el.offsetHeight - viewportH;
+        const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
+
+        // The very first scene is what the page loads on — it must be
+        // fully visible at p=0 (no scroll yet), not faded out waiting for
+        // an entrance that requires scrolling to trigger. Every later
+        // scene's "fade up from black" entrance instead coincides with the
+        // moment it starts covering the scene before it, which is what
+        // makes it read as a transition rather than a load-time flash.
+        let opacity: number;
+        if (i === 0) {
+          opacity = p > EXIT ? 1 - ease((p - EXIT) / (1 - EXIT)) : 1;
+        } else if (p < ENTER) {
+          opacity = ease(p / ENTER);
+        } else if (p > EXIT) {
+          opacity = 1 - ease((p - EXIT) / (1 - EXIT));
+        } else {
+          opacity = 1;
+        }
+
+        const scale = SCALE_FROM + (SCALE_TO - SCALE_FROM) * p;
+
+        inner.style.opacity = String(opacity);
+        inner.style.transform = `scale(${scale.toFixed(4)})`;
+
+        if (video && video.readyState >= 1 && video.duration) {
+          video.currentTime = p * video.duration;
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
 }
