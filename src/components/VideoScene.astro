@@ -1,13 +1,12 @@
 ---
-// Shared full-bleed video "scene" — every top-level section is one of
-// these. The page never pans vertically: scroll instead drives a single
-// scene's local progress (0→1, computed by scene.ts from how far you've
-// scrolled through this scene's own tall wrapper), which fades the scene
-// in, grows it slightly (the "z axis" flythrough feel) and scrubs its
-// video in lock-step. A later scene's opaque stage naturally covers the
-// previous one once it starts sticking, which is what produces the
-// fade-through-black transition between scenes — no separate crossfade
-// element needed.
+// Shared full-bleed video "scene" — every top-level section (and the
+// footer) is one of these steps. Base CSS here is the progressive-
+// enhancement fallback: steps stacked in normal document flow, each one
+// viewport tall, videos just autoplaying — works with no JS and under
+// prefers-reduced-motion. The paginated, video-gated, fade/scale/delay
+// behaviour (driven by src/scripts/scene.ts) is layered on top via
+// #siteScroll[data-paginate="true"] rules in global.css, since that
+// state lives on an ancestor outside this component.
 interface Props {
   id: string;
   video: string;
@@ -24,7 +23,7 @@ const {
 <section id={id} class="scene" data-scene>
   <div class="stage">
     <div class="stage-inner">
-      <video class="footage" muted loop playsinline autoplay preload="auto">
+      <video class="footage" muted playsinline autoplay preload="auto">
         <source src={video} type="video/mp4" />
       </video>
       <div class="scrim" style={`background:${scrim}`}></div>
@@ -38,13 +37,12 @@ const {
 <style>
   .scene {
     position: relative;
-    height: 200vh;
+    height: 100vh;
   }
 
   .stage {
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    position: absolute;
+    inset: 0;
     overflow: hidden;
     background: #000;
   }
@@ -53,7 +51,6 @@ const {
     position: absolute;
     inset: 0;
     transform-origin: 50% 50%;
-    will-change: transform, opacity;
   }
 
   .footage {
@@ -78,12 +75,5 @@ const {
     justify-content: flex-end;
     padding: 96px var(--section-x) 72px;
     color: #fff;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .stage-inner {
-      opacity: 1 !important;
-      transform: none !important;
-    }
   }
 </style>

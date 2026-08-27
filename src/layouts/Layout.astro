@@ -66,6 +66,14 @@ const { title, description, path = '/' } = Astro.props;
     border-radius: 4px;
   }
 
+  /* Paginated mode (see scene.ts): steps are advanced by gesture/gate
+     rather than free scroll, so native scrolling is switched off — skipped
+     under prefers-reduced-motion and unavailable without JS, both of which
+     leave this unset and fall back to plain free-scrolling stacked steps. */
+  .site-scroll[data-paginate='true'] {
+    overflow: hidden;
+  }
+
   @media (max-width: 640px) {
     .site-frame {
       inset: 8px;
