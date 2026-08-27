@@ -12,7 +12,7 @@ const firstId = sceneIds[0];
       return (
         <video
           data-scene-video={id}
-          class="footage"
+          class:list={['footage', eager && 'footage--hero']}
           muted
           loop
           playsinline
@@ -52,6 +52,11 @@ const firstId = sceneIds[0];
 
   .footage:first-of-type {
     opacity: 1;
+  }
+
+  /* Local LQIP fill so the frame isn't black while the hero MP4 arrives. */
+  .footage--hero {
+    background: url('/hero-lqip.jpg') center / cover no-repeat;
   }
 
   .scrim {

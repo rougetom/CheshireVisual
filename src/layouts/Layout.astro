@@ -17,6 +17,7 @@ const { title, description, path = '/' } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <Seo title={title} description={description} path={path} />
+    <link rel="preload" as="image" href="/hero-lqip.jpg" fetchpriority="high" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

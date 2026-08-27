@@ -8,6 +8,7 @@ import 'lenis/dist/lenis.css';
 interface SceneRefs {
   el: HTMLElement;
   inner: HTMLElement;
+  stage: HTMLElement;
   video: HTMLVideoElement | null;
 }
 
@@ -19,9 +20,12 @@ interface Scrubber {
   watchdog: number;
 }
 
-const ENTER = 0.14;
-const EXIT = 0.86;
 const LANDING_P = 0.4;
+// Dissolve the clip over this much of the frame as the next stage slides in.
+const VIDEO_FADE = 0.08;
+// Copy holds until this scene starts to yield the frame.
+const COPY_HOLD = 0.88;
+const COPY_FADE = 0.1;
 // Seconds to cover ~63% of the remaining playhead error. Higher = more
 // coast after the wheel stops; still pulled toward the scroll mapping.
 const PLAYHEAD_TAU = 0.28;
@@ -36,6 +40,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 const scenes: SceneRefs[] = sceneEls.map((el) => ({
   el,
   inner: el.querySelector<HTMLElement>('.stage-inner')!,
+  stage: el.querySelector<HTMLElement>('.stage')!,
   video: document.querySelector<HTMLVideoElement>(`[data-scene-video="${el.id}"]`),
 }));
 
@@ -72,28 +77,35 @@ if (scroller) {
 
 if (scroller && sceneEls.length) {
   const fadeScenes = () => {
-    const viewportH = scroller.clientHeight;
+    const viewRect = scroller.getBoundingClientRect();
+    const viewportH = viewRect.height;
     const progresses: number[] = [];
 
-    scenes.forEach(({ el, inner, video }, i) => {
+    scenes.forEach(({ el, inner, stage, video }, i) => {
       const rect = el.getBoundingClientRect();
       const total = el.offsetHeight - viewportH;
       const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
       progresses.push(p);
 
-      let opacity: number;
-      if (i === 0) {
-        opacity = p > EXIT ? 1 - ease((p - EXIT) / (1 - EXIT)) : 1;
-      } else if (p < ENTER) {
-        opacity = ease(p / ENTER);
-      } else if (p > EXIT) {
-        opacity = 1 - ease((p - EXIT) / (1 - EXIT));
+      const stageRect = stage.getBoundingClientRect();
+      const visible =
+        Math.min(stageRect.bottom, viewRect.bottom) - Math.max(stageRect.top, viewRect.top);
+      const coverage = Math.min(1, Math.max(0, visible / Math.max(viewportH, 1)));
+
+      const videoOpacity =
+        coverage <= 0 ? 0 : coverage >= VIDEO_FADE ? 1 : ease(coverage / VIDEO_FADE);
+
+      let copyOpacity: number;
+      if (coverage >= COPY_HOLD) {
+        copyOpacity = 1;
+      } else if (coverage <= COPY_HOLD - COPY_FADE) {
+        copyOpacity = 0;
       } else {
-        opacity = 1;
+        copyOpacity = ease((coverage - (COPY_HOLD - COPY_FADE)) / COPY_FADE);
       }
 
-      inner.style.opacity = String(opacity);
-      if (video) video.style.opacity = String(opacity);
+      inner.style.opacity = String(copyOpacity);
+      if (video) video.style.opacity = String(videoOpacity);
 
       // Start fetching the next clip before it covers this one.
       if (p > 0.55) {
