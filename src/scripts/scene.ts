@@ -1,40 +1,35 @@
-// Drives every VideoScene: computed purely from each scene's own scroll
-// position, independent of the others. For a scene's local progress p
-// (0 at the top of its scroll range, 1 at the bottom):
-//   - opacity fades in over the first ENTER fraction, holds, then fades
-//     out over the last (1 - EXIT) fraction
-//   - scale grows continuously from SCALE_FROM to SCALE_TO across the
-//     whole range — the "flying toward camera" z-axis feel
-//   - the scene's video is scrubbed directly to p * duration
+// Drives the page: one fixed background video, scrubbed from overall
+// scroll, plus per-scene content fades. The video never scales or
+// moves — it fills the frame behind everything. Each scene's local
+// progress p (0 at the top of its own sticky range, 1 at the bottom)
+// only fades that scene's copy in and out so sections don't stack.
 //
-// The page itself never pans: each scene is `position: sticky`, so once a
-// later scene starts sticking it simply paints over the (by then
-// faded-to-transparent) scene before it. That's what produces the
-// fade-through-black transition — no separate crossfade element needed,
-// as long as every stage has an opaque background (see VideoScene.astro).
+// HLS / the Bunny iframe player are the wrong tools here: iframe
+// seeks go through async postMessage, and HLS is segmented so every
+// currentTime jump refetches a fragment. Native progressive MP4 with
+// byte ranges is what we attach in BackgroundVideo.astro; this file
+// just maps scroll → currentTime, coalesced on the seeked event so
+// we never stack seeks faster than the decoder can keep up.
 
 interface SceneRefs {
   el: HTMLElement;
   inner: HTMLElement;
-  video: HTMLVideoElement | null;
 }
 
 const ENTER = 0.14;
 const EXIT = 0.86;
-const SCALE_FROM = 0.86;
-const SCALE_TO = 1.16;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 const scroller = document.getElementById('siteScroll');
 const sceneEls = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]'));
+const video = document.querySelector<HTMLVideoElement>('[data-bg-video]');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // In-page nav links (`href="#id"`) target a scene's id, but a scene's own
-// top (p=0) is where it's still transparent/black for every scene except
-// the first — the browser's native fragment jump would land the user on a
-// black screen. Intercept these and land partway into the scene's range
-// instead, where it's already fully faded in.
+// top (p=0) is where it's still transparent for every scene except the
+// first — the browser's native fragment jump would land the user on empty
+// copy. Intercept these and land partway into the scene's range instead.
 if (scroller) {
   const LANDING_P = 0.4;
 
@@ -58,49 +53,77 @@ if (scroller && sceneEls.length) {
   const scenes: SceneRefs[] = sceneEls.map((el) => ({
     el,
     inner: el.querySelector<HTMLElement>('.stage-inner')!,
-    video: el.querySelector('video'),
   }));
 
+  const fadeScenes = () => {
+    const viewportH = scroller.clientHeight;
+
+    scenes.forEach(({ el, inner }, i) => {
+      const rect = el.getBoundingClientRect();
+      const total = el.offsetHeight - viewportH;
+      const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
+
+      // The first scene is what the page loads on — fully visible at p=0.
+      // Later scenes fade up as they cover the one before.
+      let opacity: number;
+      if (i === 0) {
+        opacity = p > EXIT ? 1 - ease((p - EXIT) / (1 - EXIT)) : 1;
+      } else if (p < ENTER) {
+        opacity = ease(p / ENTER);
+      } else if (p > EXIT) {
+        opacity = 1 - ease((p - EXIT) / (1 - EXIT));
+      } else {
+        opacity = 1;
+      }
+
+      inner.style.opacity = String(opacity);
+    });
+  };
+
   if (reduceMotion) {
-    scenes.forEach(({ video }) => video?.play().catch(() => {}));
+    video?.play().catch(() => {});
+    scenes.forEach(({ inner }) => {
+      inner.style.opacity = '1';
+    });
   } else {
     let ticking = false;
+    let seeking = false;
+    let pendingTime: number | null = null;
+
+    const applySeek = (time: number) => {
+      if (!video || !video.duration) return;
+      const next = Math.min(Math.max(time, 0), Math.max(video.duration - 0.04, 0));
+      if (Math.abs(video.currentTime - next) < 0.03) return;
+
+      if (seeking) {
+        pendingTime = next;
+        return;
+      }
+
+      seeking = true;
+      video.currentTime = next;
+    };
+
+    video?.addEventListener('seeked', () => {
+      seeking = false;
+      if (pendingTime !== null) {
+        const time = pendingTime;
+        pendingTime = null;
+        applySeek(time);
+      }
+    });
+
+    const scrubVideo = () => {
+      if (!video || !video.duration) return;
+      const max = scroller.scrollHeight - scroller.clientHeight;
+      const p = Math.min(1, Math.max(0, scroller.scrollTop / Math.max(max, 1)));
+      applySeek(p * video.duration);
+    };
 
     const update = () => {
       ticking = false;
-      const viewportH = scroller.clientHeight;
-
-      scenes.forEach(({ el, inner, video }, i) => {
-        const rect = el.getBoundingClientRect();
-        const total = el.offsetHeight - viewportH;
-        const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
-
-        // The very first scene is what the page loads on — it must be
-        // fully visible at p=0 (no scroll yet), not faded out waiting for
-        // an entrance that requires scrolling to trigger. Every later
-        // scene's "fade up from black" entrance instead coincides with the
-        // moment it starts covering the scene before it, which is what
-        // makes it read as a transition rather than a load-time flash.
-        let opacity: number;
-        if (i === 0) {
-          opacity = p > EXIT ? 1 - ease((p - EXIT) / (1 - EXIT)) : 1;
-        } else if (p < ENTER) {
-          opacity = ease(p / ENTER);
-        } else if (p > EXIT) {
-          opacity = 1 - ease((p - EXIT) / (1 - EXIT));
-        } else {
-          opacity = 1;
-        }
-
-        const scale = SCALE_FROM + (SCALE_TO - SCALE_FROM) * p;
-
-        inner.style.opacity = String(opacity);
-        inner.style.transform = `scale(${scale.toFixed(4)})`;
-
-        if (video && video.readyState >= 1 && video.duration) {
-          video.currentTime = p * video.duration;
-        }
-      });
+      fadeScenes();
+      scrubVideo();
     };
 
     const onScroll = () => {
@@ -109,6 +132,28 @@ if (scroller && sceneEls.length) {
         requestAnimationFrame(update);
       }
     };
+
+    // Unlock seeking on iOS: a muted play/pause primes the element so
+    // subsequent currentTime writes actually paint a frame.
+    const prime = () => {
+      if (!video) return;
+      const play = video.play();
+      if (play) {
+        play
+          .then(() => {
+            video.pause();
+            update();
+          })
+          .catch(() => update());
+      } else {
+        update();
+      }
+    };
+
+    if (video) {
+      if (video.readyState >= 1) prime();
+      else video.addEventListener('loadedmetadata', prime, { once: true });
+    }
 
     scroller.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);

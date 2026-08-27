@@ -2,7 +2,7 @@
   Design tokens — Cheshire Visual
   Plain black-and-white UI chrome: white background, black type, no colour
   accent. Footage/imagery itself stays full colour. Most section content
-  now sits on top of a dark, full-bleed video (see VideoScene.astro) and
+  now sits on top of a dark, full-bleed video (see BackgroundVideo.astro) and
   uses literal white/rgba values rather than these tokens — --color-text
   and --color-bg remain as "the black"/"the white" for chrome that isn't
   video-backed (the frame border, the outer margin, the footer).
