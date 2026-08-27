@@ -1,6 +1,7 @@
 // Per-scene full-bleed clips, each scrubbed from that scene's own scroll
-// range. The playhead is tied to scroll but eased (and Lenis coasts the
-// scroller) so lifting off the wheel doesn't freeze the frame.
+// range. While the wheel is moving the playhead tracks scroll; after it
+// stops, leftover velocity keeps the clip playing so the frame doesn't
+// freeze on a keyframe.
 
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
@@ -15,9 +16,13 @@ interface SceneRefs {
 interface Scrubber {
   video: HTMLVideoElement;
   desired: number;
+  lastDesired: number;
   display: number;
+  vel: number;
   seeking: boolean;
   watchdog: number;
+  playPending: boolean;
+  playGen: number;
 }
 
 const LANDING_P = 0.4;
@@ -26,9 +31,16 @@ const VIDEO_FADE = 0.08;
 // Copy holds until this scene starts to yield the frame.
 const COPY_HOLD = 0.88;
 const COPY_FADE = 0.1;
-// Seconds to cover ~63% of the remaining playhead error. Higher = more
-// coast after the wheel stops; still pulled toward the scroll mapping.
-const PLAYHEAD_TAU = 0.28;
+// Track scroll speed tightly while the wheel is moving.
+const VEL_ATTACK = 0.08;
+// After the wheel stops, keep that speed for a beat so playback coasts.
+const VEL_RELEASE = 0.55;
+// Reverse / catch-up seeks ease toward the scroll mapping.
+const POS_TAU = 0.4;
+const PLAY_START = 0.1;
+const PLAY_HOLD = 0.03;
+const MIN_RATE = 0.28;
+const MAX_RATE = 3.5;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -134,9 +146,13 @@ if (scroller && sceneEls.length) {
             {
               video,
               desired: 0,
+              lastDesired: 0,
               display: 0,
+              vel: 0,
               seeking: false,
               watchdog: 0,
+              playPending: false,
+              playGen: 0,
             },
           ]
         : [],
@@ -171,22 +187,57 @@ if (scroller && sceneEls.length) {
       });
     });
 
-    const prime = (video: HTMLVideoElement) => {
+    const ensurePlay = (s: Scrubber) => {
+      const { video } = s;
+      if (!video.paused || s.playPending) return;
+      s.playPending = true;
+      s.playGen += 1;
+      const gen = s.playGen;
       const play = video.play();
       if (play) {
-        play.then(() => video.pause()).catch(() => {});
+        play
+          .then(() => {
+            if (s.playGen !== gen) return;
+            s.playPending = false;
+            // A slow play() must not clobber an in-flight coast, but it
+            // should still stop the load-time prime if we never scrolled.
+            if (s.vel <= PLAY_HOLD) video.pause();
+          })
+          .catch(() => {
+            if (s.playGen === gen) s.playPending = false;
+          });
+      } else {
+        s.playPending = false;
       }
     };
 
+    // Preload every clip so later scenes have duration and can scrub.
+    // Only prime the hero decoder; the rAF loop starts playback for coast.
     scenes.forEach(({ video }, i) => {
       if (!video) return;
-      if (i === 0) {
-        if (video.readyState >= 1) prime(video);
-        else video.addEventListener('loadedmetadata', () => prime(video), { once: true });
-      } else {
-        video.addEventListener('loadeddata', () => prime(video), { once: true });
-      }
+      video.preload = 'auto';
+      if (video.readyState < 1) video.load();
+      if (i !== 0) return;
+      const s = scrubberFor(video);
+      if (!s) return;
+      const start = () => ensurePlay(s);
+      if (video.readyState >= 1) start();
+      else video.addEventListener('loadedmetadata', start, { once: true });
     });
+
+    const unlock = () => {
+      const visible = scenes.find(({ video }) => {
+        if (!video) return false;
+        const opacity = Number.parseFloat(video.style.opacity || '0');
+        return opacity > 0.05;
+      });
+      const clip = visible?.video ?? scenes[0]?.video;
+      if (!clip) return;
+      const s = scrubberFor(clip);
+      if (s) ensurePlay(s);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+    window.addEventListener('touchstart', unlock, { once: true, passive: true });
 
     if (content) {
       lenis = new Lenis({
@@ -194,7 +245,7 @@ if (scroller && sceneEls.length) {
         content,
         eventsTarget: scroller,
         autoRaf: false,
-        lerp: 0.075,
+        lerp: 0.048,
         wheelMultiplier: 0.9,
         touchMultiplier: 1.15,
         smoothWheel: true,
@@ -209,14 +260,60 @@ if (scroller && sceneEls.length) {
       lenis?.raf(time);
 
       const progresses = fadeScenes();
-      const k = 1 - Math.exp(-dt / PLAYHEAD_TAU);
 
       scenes.forEach(({ video }, i) => {
         const s = scrubberFor(video);
         if (!s || !video?.duration) return;
-        s.desired = progresses[i] * video.duration;
-        s.display += (s.desired - s.display) * k;
-        flushSeek(s);
+        const duration = video.duration;
+        const end = Math.max(duration - 0.05, 0);
+        s.desired = Math.min(progresses[i] * duration, end);
+
+        if (Math.abs(s.desired - s.lastDesired) > 1.5) {
+          s.lastDesired = s.desired;
+          s.display = s.desired;
+          s.vel = 0;
+          if (!video.paused) video.pause();
+          flushSeek(s);
+          return;
+        }
+
+        const targetVel = dt > 1e-4 ? (s.desired - s.lastDesired) / dt : 0;
+        s.lastDesired = s.desired;
+        const tau = Math.abs(targetVel) > 0.05 ? VEL_ATTACK : VEL_RELEASE;
+        s.vel += (targetVel - s.vel) * (1 - Math.exp(-dt / tau));
+        s.vel = Math.min(MAX_RATE, Math.max(-MAX_RATE, s.vel));
+
+        const shown = Number.parseFloat(video.style.opacity || '0');
+        const holding = !video.paused || s.playPending;
+        const canPlayForward =
+          video.currentTime < end - 0.02 && shown > 0.05;
+        const shouldPlay =
+          canPlayForward && s.vel > (holding ? PLAY_HOLD : PLAY_START);
+
+        // Forward: play at the decaying scroll rate so every frame is shown.
+        // Seeking only hits ~1s keyframes, which looks like an instant stop.
+        if (shouldPlay) {
+          s.display = video.currentTime;
+          const lag = s.desired - video.currentTime;
+          let rate = Math.min(Math.max(s.vel, MIN_RATE), MAX_RATE);
+          if (lag > 0.12) rate = Math.min(Math.max(s.vel + lag * 1.8, MIN_RATE), MAX_RATE);
+          video.playbackRate = rate;
+          ensurePlay(s);
+          return;
+        }
+
+        if (!video.paused) {
+          video.pause();
+          s.display = video.currentTime;
+        }
+
+        const reversing = s.vel < -PLAY_START || s.desired < s.display - 0.05;
+        const behind = s.desired - s.display > 0.12 && s.vel <= PLAY_HOLD;
+        if (reversing || behind) {
+          s.display += (s.desired - s.display) * (1 - Math.exp(-dt / POS_TAU));
+          s.display = Math.min(Math.max(s.display, 0), end);
+          flushSeek(s);
+        }
       });
 
       requestAnimationFrame(tick);
