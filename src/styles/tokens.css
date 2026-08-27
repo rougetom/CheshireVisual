@@ -1,7 +1,7 @@
 /*
   Design tokens — Cheshire Visual
-  Plain black-and-white palette: white background, black type, grayscale
-  imagery. No colour accent.
+  Plain black-and-white UI chrome: white background, black type, no colour
+  accent. Footage/imagery itself stays full colour.
 */
 :root {
   /* Colour */

@@ -3,8 +3,9 @@
 Marketing site for [cheshirevisual.co.uk](https://cheshirevisual.co.uk) — a drone, aerial and 360°
 photography/video studio based in Cheshire, serving the North West of England.
 
-Built with [Astro](https://astro.build) for fast, SEO-first static output. Plain black-and-white
-design: white background, black type, grayscale imagery, no colour accent. The whole page sits
+Built with [Astro](https://astro.build) for fast, SEO-first static output. Plain black-and-white UI
+chrome: white background, black type, no colour accent — footage itself stays full colour. The
+whole page sits
 inside a fixed, rounded, bordered frame (see below); the hero is a full-bleed video that scrubs to
 scroll position, Wolverine Worldwide–style, with the nav floating transparently over it until you
 scroll past; and content fades/scales/blurs in as it scrolls into view, elsewhere in the page.
@@ -77,17 +78,16 @@ height: 100vh` stage — the video pins in place and fills the viewport while yo
 scene, then releases and scrolls away normally once you're past it (the classic pinned-hero
 pattern). An inline script listens for `scroll` on `#siteScroll`, computes how far through the
 scene you are, and sets `video.currentTime` directly — so scrolling scrubs through the clip like a
-showreel rather than it just autoplaying. The video is desaturated (`filter: grayscale(1)`) and
-sits under a bottom-heavy black gradient scrim so the white headline stays legible regardless of
-what's in frame.
+showreel rather than it just autoplaying. The video plays in full colour, under a bottom-heavy
+black gradient scrim so the white headline stays legible regardless of what's in frame.
 
 ## Video panels
 
 `src/components/VideoPanel.astro` is the reusable **framed**, in-flow video/photo panel used inside
-sections (currently just `About`) — a bordered box with corner brackets, an optional label, and the
-same grayscale treatment as the hero. It's deliberately a contained panel rather than a full-bleed
-backdrop, since a full-bleed dark backdrop doesn't suit a white page — only the hero (a distinct,
-full-bleed treatment of its own) breaks that rule.
+sections (currently just `About`) — a bordered box with corner brackets, an optional label, footage
+in full colour. It's deliberately a contained panel rather than a full-bleed backdrop, since a
+full-bleed dark backdrop doesn't suit a white page — only the hero (a distinct, full-bleed treatment
+of its own) breaks that rule.
 
 **Every video reference points at the same clip today** (`public/videos/hero.mp4`) — there's only
 one piece of footage. To add more, drop additional files at `public/videos/<name>.mp4`:
