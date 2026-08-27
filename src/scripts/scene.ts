@@ -26,8 +26,8 @@ const EXIT = 0.86;
 const LANDING_P = 0.4;
 // Velocity smoothing: last scroll speed keeps driving the playhead after
 // the wheel stops. Position correction is slower so it can overshoot.
-const VEL_TAU = 0.16;
-const POS_TAU = 0.45;
+const VEL_TAU = 0.22;
+const POS_TAU = 0.5;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -171,7 +171,7 @@ if (scroller && sceneEls.length) {
         play
           .then(() => {
             // Don't clobber the rAF loop if it's already driving this clip.
-            if (!s || s.vel <= 0.18) video.pause();
+            if (!s || s.vel <= 0.08) video.pause();
           })
           .catch(() => {});
       }
@@ -231,7 +231,11 @@ if (scroller && sceneEls.length) {
 
         // Forward: actually play at decaying rate so every frame is shown
         // (seeking only hits keyframes, so a short coast would look frozen).
-        if (s.vel > 0.18 && video.currentTime < end - 0.02 && Number.parseFloat(video.style.opacity || '0') > 0.05) {
+        const shown = Number.parseFloat(video.style.opacity || getComputedStyle(video).opacity || '0');
+        const holdPlay = !video.paused;
+        const shouldPlay =
+          s.vel > (holdPlay ? 0.08 : 0.2) && video.currentTime < end - 0.02 && shown > 0.05;
+        if (shouldPlay) {
           s.display = video.currentTime;
           video.playbackRate = Math.min(Math.max(s.vel, 0.35), 3.5);
           if (video.paused) video.play().catch(() => {});
