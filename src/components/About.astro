@@ -1,4 +1,5 @@
 ---
+import LiquidGlass from './LiquidGlass.astro';
 import VideoScene from './VideoScene.astro';
 ---
 
@@ -9,15 +10,33 @@ import VideoScene from './VideoScene.astro';
     </div>
 
     <div class="copy">
-      <p>
-        CAA-licensed drone, aerial and 360&deg; photography and video production, filming across
-        Cheshire and the North West &mdash; Chester, Manchester, Liverpool, Warrington and beyond.
-        Every flight is planned and insured; every edit delivered ready to publish.
-      </p>
+      <LiquidGlass class="about-copy">
+        <p>
+          CAA-licensed drone, aerial and 360&deg; photography and video production, filming across
+          Cheshire and the North West &mdash; Chester, Manchester, Liverpool, Warrington and beyond.
+          Every flight is planned and insured; every edit delivered ready to publish.
+        </p>
+      </LiquidGlass>
+
       <ul class="stats">
-        <li><span>CAA</span>Licensed remote pilot</li>
-        <li><span>4K&nbsp;/&nbsp;8K</span>Aerial &amp; 360&deg; capture</li>
-        <li><span>North West</span>Cheshire-based, flying region-wide</li>
+        <li>
+          <LiquidGlass class="stat-card">
+            <span>CAA</span>
+            Licensed remote pilot
+          </LiquidGlass>
+        </li>
+        <li>
+          <LiquidGlass class="stat-card">
+            <span>4K&nbsp;/&nbsp;8K</span>
+            Aerial &amp; 360&deg; capture
+          </LiquidGlass>
+        </li>
+        <li>
+          <LiquidGlass class="stat-card">
+            <span>North West</span>
+            Cheshire-based, flying region-wide
+          </LiquidGlass>
+        </li>
       </ul>
     </div>
   </div>
@@ -38,34 +57,54 @@ import VideoScene from './VideoScene.astro';
     color: #fff;
   }
 
-  .copy p {
+  .copy {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .about-copy {
+    padding: 22px 24px;
+  }
+
+  .about-copy p {
     font-size: 15px;
     line-height: 1.7;
-    color: rgba(255, 255, 255, 0.78);
+    color: rgba(255, 255, 255, 0.9);
     max-width: 560px;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
   }
 
   .stats {
     list-style: none;
-    margin: 24px 0 0;
-    padding: 20px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 28px;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .stats li {
+    min-width: 0;
+  }
+
+  .stat-card {
+    padding: 18px 18px 16px;
+    min-height: 100%;
     font-size: 11.5px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.65);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    color: rgba(255, 255, 255, 0.72);
   }
 
-  .stats span {
+  .stat-card :global(.liquid-glass__content) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .stat-card span {
     font-family: var(--font-display);
     font-weight: 700;
     font-size: 22px;
@@ -78,6 +117,10 @@ import VideoScene from './VideoScene.astro';
     .inner {
       grid-template-columns: 1fr;
       gap: 20px;
+    }
+
+    .stats {
+      grid-template-columns: 1fr;
     }
   }
 </style>

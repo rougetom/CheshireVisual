@@ -4,8 +4,8 @@
 @import '@fontsource/inter/700.css';
 @import '@fontsource/inter-tight/700.css';
 @import '@fontsource/inter-tight/800.css';
-@import 'astro-liquid-glass/styles';
 @import './tokens.css';
+@import './liquid-glass.css';
 
 * {
   box-sizing: border-box;

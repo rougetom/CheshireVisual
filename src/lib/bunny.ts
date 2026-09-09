@@ -20,6 +20,11 @@ export function bunnyClip(id: string, poster?: string): BunnyClip {
   };
 }
 
+/** Animated WebP preview thumbnail from Bunny Stream. */
+export function bunnyPreview(id: string): string {
+  return `${ZONE}/${id}/preview.webp`;
+}
+
 export const clips = {
   hero: bunnyClip('5a783278-f0c5-4b28-a4cf-5b69beb6e663', '/hero-lqip.jpg'),
   about: bunnyClip('22069af4-c34e-4451-879e-e7a7738a730d'),

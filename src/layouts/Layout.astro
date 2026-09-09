@@ -1,6 +1,7 @@
 ---
 import Seo from '@/components/Seo.astro';
 import BackgroundVideo from '@/components/BackgroundVideo.astro';
+import MediaModal from '@/components/MediaModal.astro';
 import '@/styles/global.css';
 
 interface Props {
@@ -29,8 +30,10 @@ const { title, description, path = '/' } = Astro.props;
         </div>
       </div>
     </div>
+    <MediaModal />
     <script>
-      import 'astro-liquid-glass/scripts/liquid-glass.js';
+      import '@/scripts/liquid-glass';
+      import '@/scripts/media-modal';
     </script>
   </body>
 </html>

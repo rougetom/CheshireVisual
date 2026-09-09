@@ -1,0 +1,26 @@
+---
+interface Props {
+  as?: 'div' | 'article' | 'button';
+  class?: string;
+  interactive?: boolean;
+  [key: string]: unknown;
+}
+
+const {
+  as: Tag = 'article',
+  class: className,
+  interactive = false,
+  ...rest
+} = Astro.props;
+---
+
+<Tag
+  class:list={['liquid-glass', interactive && 'liquid-glass--interactive', className]}
+  data-liquid-glass
+  {...rest}
+>
+  <div class="liquid-glass__spec" aria-hidden="true"></div>
+  <div class="liquid-glass__content">
+    <slot />
+  </div>
+</Tag>
