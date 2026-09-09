@@ -22,8 +22,8 @@ export function bunnyClip(id: string, poster?: string): BunnyClip {
 
 export const clips = {
   hero: bunnyClip('5a783278-f0c5-4b28-a4cf-5b69beb6e663', '/hero-lqip.jpg'),
-  about: bunnyClip('42d2f657-a408-475d-b5a0-cb5eabf776a7'),
-  services: bunnyClip('22069af4-c34e-4451-879e-e7a7738a730d'),
+  about: bunnyClip('22069af4-c34e-4451-879e-e7a7738a730d'),
+  services: bunnyClip('42d2f657-a408-475d-b5a0-cb5eabf776a7'),
   // No dedicated clip supplied yet — own <video> so the playhead still
   // restarts with the section rather than continuing the previous one.
   'use-cases': bunnyClip('1222f359-d210-400e-afdc-7f0222e0d18b'),
