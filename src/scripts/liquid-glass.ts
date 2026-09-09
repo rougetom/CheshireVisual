@@ -25,3 +25,17 @@ const bindGlass = (card: HTMLElement) => {
 };
 
 document.querySelectorAll<HTMLElement>('[data-liquid-glass]').forEach(bindGlass);
+
+
+document.querySelectorAll<HTMLImageElement>('img[data-fallback]').forEach((img) => {
+  img.addEventListener(
+    'error',
+    () => {
+      const fallback = img.dataset.fallback;
+      if (!fallback) return;
+      img.src = fallback;
+      img.removeAttribute('data-fallback');
+    },
+    { once: true },
+  );
+});

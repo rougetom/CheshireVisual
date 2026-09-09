@@ -1,17 +1,17 @@
 ---
-interface Props {
+type GlassProps = {
   as?: 'div' | 'article' | 'button';
   class?: string;
   interactive?: boolean;
   [key: string]: unknown;
-}
+};
 
 const {
   as: Tag = 'article',
   class: className,
   interactive = false,
   ...rest
-} = Astro.props;
+} = Astro.props as GlassProps;
 ---
 
 <Tag

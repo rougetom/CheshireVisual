@@ -2,10 +2,10 @@
    https://codepen.io/rougedigital/pen/gbmMMbK */
 
 .liquid-glass {
-  --lg-tint: color-mix(in oklab, white 28%, transparent);
+  --lg-tint: color-mix(in oklab, white 46%, transparent);
   --lg-mx: 30%;
   --lg-my: 20%;
-  --lg-gloss: 0.55;
+  --lg-gloss: 0.62;
   --lg-rx: 0deg;
   --lg-ry: 0deg;
 
@@ -15,7 +15,7 @@
   width: 100%;
   margin: 0;
   padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 22px;
   color: #fff;
   text-align: left;
@@ -24,10 +24,10 @@
   overflow: hidden;
   background: var(--lg-tint);
   box-shadow:
-    0 24px 48px -28px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
+    0 24px 48px -28px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(175%) brightness(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(175%) brightness(1.18);
   transform: perspective(1100px) rotateX(var(--lg-ry)) rotateY(var(--lg-rx));
   transform-style: preserve-3d;
   transition:
