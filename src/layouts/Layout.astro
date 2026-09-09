@@ -1,6 +1,7 @@
 ---
 import Seo from '@/components/Seo.astro';
 import BackgroundVideo from '@/components/BackgroundVideo.astro';
+import 'astro-liquid-glass/styles';
 import '@/styles/global.css';
 
 interface Props {
@@ -29,6 +30,9 @@ const { title, description, path = '/' } = Astro.props;
         </div>
       </div>
     </div>
+    <script>
+      import 'astro-liquid-glass/scripts/liquid-glass.js';
+    </script>
   </body>
 </html>
 

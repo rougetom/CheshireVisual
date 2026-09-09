@@ -1,4 +1,5 @@
 ---
+import GlassCard from 'astro-liquid-glass/components/GlassCard.astro';
 import VideoScene from './VideoScene.astro';
 
 const services = [
@@ -23,10 +24,10 @@ const services = [
   <div class="grid">
     {
       services.map((service) => (
-        <div class="col">
+        <GlassCard class="service-card">
           <h3>{service.title}</h3>
           <p>{service.body}</p>
-        </div>
+        </GlassCard>
       ))
     }
   </div>
@@ -44,22 +45,20 @@ const services = [
   .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    gap: 36px;
   }
 
-  .col {
-    padding: 28px 40px 0 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.25);
-  }
-
-  .col:last-child {
-    border-right: none;
-    padding-right: 0;
-  }
-
-  .col:not(:first-child) {
-    padding-left: 40px;
+  .service-card {
+    --glass-bg: rgba(255, 255, 255, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.35);
+    --glass-blur: 18px;
+    --glass-saturate: 155%;
+    border-radius: 22px;
+    padding: 28px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }
 
   h3 {
@@ -70,7 +69,7 @@ const services = [
     margin-bottom: 10px;
   }
 
-  .col p {
+  .service-card p {
     font-size: 14px;
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.72);
@@ -79,13 +78,7 @@ const services = [
   @media (max-width: 900px) {
     .grid {
       grid-template-columns: 1fr;
-      border-top: none;
-      gap: 18px;
-    }
-
-    .col {
-      border-right: none;
-      padding: 0 !important;
+      gap: 24px;
     }
   }
 </style>
