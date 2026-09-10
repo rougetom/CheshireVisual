@@ -1,0 +1,104 @@
+/* Light liquid glass — adapted from
+   https://codepen.io/rougedigital/pen/gbmMMbK */
+
+.liquid-glass {
+  --lg-tint: color-mix(in oklab, white 46%, transparent);
+  --lg-mx: 30%;
+  --lg-my: 20%;
+  --lg-gloss: 0.62;
+  --lg-rx: 0deg;
+  --lg-ry: 0deg;
+
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 22px;
+  color: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: default;
+  overflow: hidden;
+  background: var(--lg-tint);
+  box-shadow:
+    0 24px 48px -28px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(175%) brightness(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(175%) brightness(1.18);
+  transform: perspective(1100px) rotateX(var(--lg-ry)) rotateY(var(--lg-rx));
+  transform-style: preserve-3d;
+  transition:
+    transform 0.5s cubic-bezier(0.2, 0.9, 0.2, 1),
+    box-shadow 0.4s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button.liquid-glass {
+  cursor: pointer;
+}
+
+.liquid-glass--interactive {
+  cursor: pointer;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  opacity: var(--lg-gloss);
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    220px 220px at var(--lg-mx) var(--lg-my),
+    rgba(255, 255, 255, 0.58),
+    rgba(255, 255, 255, 0) 60%
+  );
+}
+
+.liquid-glass__spec {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 46%,
+    transparent 62%
+  );
+}
+
+.liquid-glass__content {
+  position: relative;
+  z-index: 3;
+}
+
+.liquid-glass:hover,
+.liquid-glass:focus-visible {
+  box-shadow:
+    0 34px 64px -28px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.liquid-glass:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass {
+    transition: box-shadow 0.2s ease;
+    transform: none;
+  }
+
+  .liquid-glass__spec {
+    display: none;
+  }
+}

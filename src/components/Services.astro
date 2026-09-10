@@ -1,5 +1,5 @@
 ---
-import GlassCard from 'astro-liquid-glass/components/GlassCard.astro';
+import LiquidGlass from './LiquidGlass.astro';
 import VideoScene from './VideoScene.astro';
 
 const services = [
@@ -24,10 +24,10 @@ const services = [
   <div class="grid">
     {
       services.map((service) => (
-        <GlassCard class="service-card">
+        <LiquidGlass class="service-card">
           <h3>{service.title}</h3>
           <p>{service.body}</p>
-        </GlassCard>
+        </LiquidGlass>
       ))
     }
   </div>
@@ -49,16 +49,7 @@ const services = [
   }
 
   .service-card {
-    --glass-bg: rgba(255, 255, 255, 0.2);
-    --glass-border: rgba(255, 255, 255, 0.35);
-    --glass-blur: 18px;
-    --glass-saturate: 155%;
-    border-radius: 22px;
-    padding: 28px;
     min-height: 220px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
   }
 
   h3 {
@@ -72,7 +63,8 @@ const services = [
   .service-card p {
     font-size: 14px;
     line-height: 1.55;
-    color: rgba(255, 255, 255, 0.72);
+    color: rgba(255, 255, 255, 0.86);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
   }
 
   @media (max-width: 900px) {
