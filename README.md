@@ -12,7 +12,7 @@ The video never scales or moves.
 ## Stack
 
 - **Astro** — static-first rendering, minimal client JS, great Core Web Vitals out of the box.
-- **@fontsource** — self-hosted Space Grotesk + Instrument Serif (no third-party font requests).
+- **@fontsource** — self-hosted Inter Tight (headings) + Inter (body).
 - **@astrojs/sitemap** — automatic `sitemap-index.xml` at build time.
 - **Bunny Stream MP4** — native `<video>` elements playing progressive H.264 files from the Stream
   pull zone (not HLS, not the iframe embed). See below for why.
@@ -69,8 +69,9 @@ Clips stay `object-fit: cover` in the frame and never change size. A scene's loc
 (0→1 through that scene's sticky range) maps to `currentTime = p * duration` for **that** clip
 only — entering About starts its video at 0 rather than continuing the hero.
 
-The playhead eases toward the scroll mapping (`PLAYHEAD_TAU`) and Lenis coasts the scroller, so
-lifting off the wheel doesn't freeze the frame. Seeks are still coalesced on `seeked`.
+The playhead stays mapped to that scene's scroll progress while you are scrolling. After the wheel
+stops, leftover velocity keeps the clip **playing** (not seeking) at a decaying rate so the picture
+doesn't freeze on a keyframe; reverse motion still seeks. Lenis also coasts the scroller itself.
 
 Every top-level section (`Hero`, `About`, `Services`, `UseCases`, `Clients`, `Contact`) is a
 `VideoScene.astro`: a tall (`200vh`) wrapper containing a `position: sticky; top: 0; height: 100vh`
